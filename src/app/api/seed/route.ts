@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { db, getAllActiveUsers, bulkUpsertShifts } from '@/lib/db';
+import { db, getAllActiveUsers, bulkUpsertShifts, upsertDutyAssignment } from '@/lib/db';
 import type { ShiftEntry } from '@/types';
 
 function datesInMonth(year: number, month: number): string[] {
@@ -70,8 +70,9 @@ export const POST = requireAuth(async (_req, { user }) => {
   const month = 4;
   const dates = datesInMonth(year, month);
 
-  // Clear existing shifts for this month
+  // Clear existing shifts + duties for this month
   db.prepare(`DELETE FROM shifts WHERE date LIKE '2026-04-%'`).run();
+  db.prepare(`DELETE FROM duty_assignments WHERE date LIKE '2026-04-%'`).run();
 
   const entries: Array<Omit<ShiftEntry, 'id' | 'created_at'>> = [];
 
@@ -114,10 +115,28 @@ export const POST = requireAuth(async (_req, { user }) => {
 
   bulkUpsertShifts(entries);
 
+  const dutyDates = dates.filter((date) => {
+    const dow = getDayOfWeek(date);
+    return dow === 6 || APRIL_2026_HOLIDAYS.has(date);
+  });
+
+  const dutyAssignments = dutyDates.map((date, idx) => {
+    const assignedUser = nonAdmins[idx % nonAdmins.length];
+    const isHoliday = APRIL_2026_HOLIDAYS.has(date);
+    const dutyType = isHoliday ? 'holiday' : 'weekend';
+    return upsertDutyAssignment({
+      date,
+      employee_id: assignedUser.id,
+      duty_type: dutyType,
+      notes: isHoliday ? 'תורנות חג' : 'תורנות סוף שבוע',
+    });
+  });
+
   return NextResponse.json({
     success: true,
-    message: `נוצרו ${entries.length} רשומות משמרת לאפריל 2026`,
+    message: `נוצרו ${entries.length} רשומות משמרת ו-${dutyAssignments.length} תורנויות לאפריל 2026`,
     usersCount: nonAdmins.length,
     shiftsCount: entries.length,
+    dutyAssignmentsCount: dutyAssignments.length,
   });
 }, ['admin']);

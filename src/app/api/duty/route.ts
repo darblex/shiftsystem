@@ -23,8 +23,6 @@ export const GET = requireAuth(async (req, { user }) => {
     if (user.role === 'employee' && user.id !== targetEmployeeId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות בתורנויות של עובד אחר' }, { status: 403 });
     }
-  } else if (user.role === 'employee') {
-    targetEmployeeId = user.id;
   }
 
   let assignments: any[];

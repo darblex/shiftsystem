@@ -50,6 +50,5 @@ export const POST = requireAuth(
       from: `${fromYear}-${String(fromMonth).padStart(2, '0')}`,
       to: `${toYear}-${String(toMonth).padStart(2, '0')}`,
     });
-  },
-  ['admin', 'manager']
+  }
 );

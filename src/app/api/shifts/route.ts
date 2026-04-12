@@ -30,8 +30,6 @@ export const GET = requireAuth(async (req, { user }) => {
     if (user.role === 'employee' && user.id !== targetUserId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות בשיבוצים של עובד אחר' }, { status: 403 });
     }
-  } else if (user.role === 'employee') {
-    targetUserId = user.id;
   }
 
   const shifts = targetUserId !== undefined
