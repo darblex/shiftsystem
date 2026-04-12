@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, LogOut, Plus, RefreshCcw, Shield, Users, Clock3, UserPlus } from 'lucide-react';
+import { CalendarDays, LogOut, RefreshCcw, Shield, Users, UserPlus } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import StatsCards from '@/components/StatsCards';
@@ -24,8 +24,6 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [employees, setEmployees] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any[]>([]);
-  const [attendanceSummary, setAttendanceSummary] = useState<any[]>([]);
-  const [liveBoard, setLiveBoard] = useState<any[]>([]);
   const [constraints, setConstraints] = useState<any[]>([]);
   const [form, setForm] = useState({ username: '', email: '', full_name: '', password: '', role: 'employee' });
   const [loading, setLoading] = useState(true);
@@ -49,24 +47,18 @@ export default function AdminPage() {
       }
       setUser(authJson.user);
 
-      const [employeesRes, scheduleRes, attendanceRes, liveRes, constraintsRes] = await Promise.all([
+      const [employeesRes, scheduleRes, constraintsRes] = await Promise.all([
         fetch('/api/employees', { credentials: 'include' }),
         fetch(`/api/schedule?year=${year}&month=${month}`, { credentials: 'include' }),
-        fetch(`/api/attendance?year=${year}&month=${month}`, { credentials: 'include' }),
-        fetch('/api/attendance?status=live', { credentials: 'include' }),
         fetch(`/api/constraints`, { credentials: 'include' }),
       ]);
 
       const employeesJson = await employeesRes.json().catch(() => ({ employees: [] }));
       const scheduleJson = await scheduleRes.json().catch(() => ({ schedule: [] }));
-      const attendanceJson = await attendanceRes.json().catch(() => ({ summary: [] }));
-      const liveJson = await liveRes.json().catch(() => ({ live: [] }));
       const constraintsJson = await constraintsRes.json().catch(() => ({ constraints: [] }));
 
       setEmployees(employeesJson.employees ?? []);
       setSchedule(scheduleJson.schedule ?? []);
-      setAttendanceSummary(attendanceJson.summary ?? []);
-      setLiveBoard(liveJson.live ?? []);
       setConstraints(constraintsJson.constraints ?? []);
     } catch {
       setError('שגיאה בטעינת הנתונים');
@@ -84,18 +76,17 @@ export default function AdminPage() {
     const totalScheduleEntries = schedule.reduce((sum, group) => sum + (group.entries?.length ?? 0), 0);
     return [
       { id: 'employees', title: 'עובדים פעילים', value: totalEmployees, icon: Users, gradient: 'from-blue-500 to-indigo-600' },
-      { id: 'live', title: 'מחוברים עכשיו', value: liveBoard.length, icon: Clock3, gradient: 'from-emerald-500 to-teal-600' },
       { id: 'constraints', title: 'אילוצים במערכת', value: constraints.length, icon: Shield, gradient: 'from-amber-500 to-orange-600' },
-      { id: 'entries', title: 'רשומות לוז', value: totalScheduleEntries, icon: CalendarDays, gradient: 'from-rose-500 to-pink-600' },
+      { id: 'entries', title: 'רשומות משמרת', value: totalScheduleEntries, icon: CalendarDays, gradient: 'from-rose-500 to-pink-600' },
     ];
-  }, [constraints.length, employees, liveBoard.length, schedule]);
+  }, [constraints.length, employees, schedule]);
 
   const mergedCalendar = useMemo(() => {
     const flat = schedule.flatMap((group: any) => group.entries ?? []);
     const officeMap = new Map<string, number>();
     for (const entry of flat) {
       if (!officeMap.has(entry.date)) officeMap.set(entry.date, 0);
-      if (entry.schedule_type === 'office') officeMap.set(entry.date, officeMap.get(entry.date)! + 1);
+      if (entry.shift_type === 'morning' || entry.shift_type === 'afternoon' || entry.shift_type === 'night') officeMap.set(entry.date, officeMap.get(entry.date)! + 1);
     }
     return Array.from(officeMap.entries()).map(([date, count]) => ({
       date: new Date(date),
@@ -194,7 +185,7 @@ export default function AdminPage() {
           {error && <div className="data-card p-4 text-rose-300">{error}</div>}
           {success && <div className="data-card p-4 text-emerald-300">{success}</div>}
 
-          <StatsCards stats={stats} cols={4} />
+          <StatsCards stats={stats} cols={3} />
 
           <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="data-card p-4">
@@ -254,44 +245,7 @@ export default function AdminPage() {
               />
             </div>
 
-            <div className="grid gap-4">
-              <div className="data-card p-4">
-                <div className="mb-3 flex items-center gap-2 text-white font-semibold"><Clock3 className="h-4 w-4" /> נוכחות בזמן אמת</div>
-                <div className="grid gap-2">
-                  {liveBoard.length === 0 ? (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">אין כרגע עובדים מחוברים.</div>
-                  ) : (
-                    liveBoard.map((item: any) => (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white">
-                        <div className="font-medium">{item.full_name}</div>
-                        <div className="text-slate-400">כניסה: {item.check_in ? new Date(item.check_in).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
 
-              <div className="data-card p-4">
-                <div className="mb-3 text-white font-semibold">סיכום נוכחות חודשי</div>
-                <div className="grid gap-2">
-                  {attendanceSummary.length === 0 ? (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">אין עדיין נתוני נוכחות לחודש הזה.</div>
-                  ) : (
-                    attendanceSummary.map((item: any) => (
-                      <div key={item.userId} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <div className="font-medium text-white">{item.fullName}</div>
-                            <div className="text-sm text-slate-400">{item.totalDays} ימים · {Number(item.totalHours ?? 0).toFixed(1)} שעות</div>
-                          </div>
-                          {item.currentlyCheckedIn && <span className="badge-soft">מחובר עכשיו</span>}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </main>

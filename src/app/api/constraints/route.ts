@@ -9,11 +9,12 @@ import { db, getConstraints, upsertConstraints, getUserById } from '@/lib/db';
 import type { ConstraintPreference } from '@/types';
 
 const VALID_PREFERENCES: ConstraintPreference[] = [
-  'prefer_home',
-  'prefer_office',
+  'prefer_morning',
+  'prefer_afternoon',
+  'prefer_night',
   'no_preference',
-  'fixed_home',
-  'fixed_office',
+  'fixed_morning',
+  'fixed_afternoon',
 ];
 
 // GET /api/constraints — get constraints for a user/month
@@ -38,7 +39,6 @@ export const GET = requireAuth(async (req, { user }) => {
     return NextResponse.json({ userId: targetUserId, year, month, constraint: constraint ?? null });
   }
 
-  // Return all constraints for the user
   let query = 'SELECT * FROM constraints WHERE user_id = ?';
   const params: any[] = [targetUserId];
   if (year) { query += ' AND year = ?'; params.push(year); }
@@ -58,17 +58,7 @@ export const POST = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const {
-    userId: userIdParam,
-    year,
-    month,
-    preference,
-    maxOfficeDays,
-    maxHomeDays,
-    unavailableDates,
-    notes,
-  } = body ?? {};
-
+  const { userId: userIdParam, year, month, preference, notes } = body ?? {};
   const targetUserId = userIdParam ? Number(userIdParam) : user.id;
 
   if (user.role === 'employee' && user.id !== targetUserId) {
@@ -78,34 +68,14 @@ export const POST = requireAuth(async (req, { user }) => {
   if (!year || !month) {
     return NextResponse.json({ error: 'נא לציין שנה וחודש' }, { status: 400 });
   }
-
   if (month < 1 || month > 12) {
     return NextResponse.json({ error: 'חודש לא תקין' }, { status: 400 });
   }
-
   if (preference && !VALID_PREFERENCES.includes(preference)) {
     return NextResponse.json(
       { error: `העדפה לא תקינה. אפשרויות: ${VALID_PREFERENCES.join(', ')}` },
       { status: 400 }
     );
-  }
-
-  // Validate unavailable dates if provided
-  let unavailableDatesJson = '[]';
-  if (unavailableDates !== undefined) {
-    if (!Array.isArray(unavailableDates)) {
-      return NextResponse.json({ error: 'unavailableDates חייב להיות מערך של תאריכים' }, { status: 400 });
-    }
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    for (const d of unavailableDates) {
-      if (!dateRegex.test(d)) {
-        return NextResponse.json(
-          { error: `תאריך לא תקין: ${d}. פורמט נדרש: YYYY-MM-DD` },
-          { status: 400 }
-        );
-      }
-    }
-    unavailableDatesJson = JSON.stringify(unavailableDates);
   }
 
   const userCheck = getUserById(targetUserId);
@@ -116,9 +86,6 @@ export const POST = requireAuth(async (req, { user }) => {
     year,
     month,
     preference: preference ?? 'no_preference',
-    max_office_days: maxOfficeDays ?? null,
-    max_home_days: maxHomeDays ?? null,
-    unavailable_dates: unavailableDatesJson,
     notes: notes ?? null,
   });
 
@@ -151,9 +118,7 @@ export const DELETE = requireAuth(async (req, { user }) => {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
     db.prepare('DELETE FROM constraints WHERE user_id = ? AND year = ? AND month = ?').run(
-      targetId,
-      Number(year),
-      Number(month)
+      targetId, Number(year), Number(month)
     );
     return NextResponse.json({ success: true, message: 'המגבלות נמחקו' });
   }

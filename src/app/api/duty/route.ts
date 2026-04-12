@@ -1,12 +1,14 @@
 export const dynamic = 'force-dynamic';
 // ============================================================
-// app/api/duty/route.ts — Weekend/on-call duty assignments
+// app/api/duty/route.ts — Duty assignment management
 // ============================================================
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { db, upsertDutyAssignment } from '@/lib/db';
+import { db, upsertDutyAssignment, getDutyAssignmentsForMonth } from '@/lib/db';
 import type { DutyAssignment } from '@/types';
+
+const VALID_DUTY_TYPES: DutyAssignment['duty_type'][] = ['regular', 'weekend', 'holiday'];
 
 // GET /api/duty — get duty assignments
 export const GET = requireAuth(async (req, { user }) => {
@@ -15,14 +17,14 @@ export const GET = requireAuth(async (req, { user }) => {
   const month = searchParams.get('month') ? Number(searchParams.get('month')) : null;
   const userIdParam = searchParams.get('userId');
 
-  let targetUserId: number | null = null;
+  let targetEmployeeId: number | null = null;
   if (userIdParam) {
-    targetUserId = Number(userIdParam);
-    if (user.role === 'employee' && user.id !== targetUserId) {
+    targetEmployeeId = Number(userIdParam);
+    if (user.role === 'employee' && user.id !== targetEmployeeId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות בתורנויות של עובד אחר' }, { status: 403 });
     }
   } else if (user.role === 'employee') {
-    targetUserId = user.id;
+    targetEmployeeId = user.id;
   }
 
   let assignments: any[];
@@ -30,34 +32,30 @@ export const GET = requireAuth(async (req, { user }) => {
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
     assignments = db
       .prepare(
-        `SELECT d.*, u.full_name, u.department
+        `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
          FROM duty_assignments d
-         JOIN users u ON u.id = d.user_id
-         WHERE d.date LIKE ? ${targetUserId ? 'AND d.user_id = ?' : ''}
+         JOIN users u ON u.id = d.employee_id
+         WHERE d.date LIKE ? ${targetEmployeeId ? 'AND d.employee_id = ?' : ''}
          ORDER BY d.date, u.full_name`
       )
-      .all(`${prefix}%`, ...(targetUserId ? [targetUserId] : [])) as any[];
+      .all(`${prefix}%`, ...(targetEmployeeId ? [targetEmployeeId] : [])) as any[];
   } else {
     assignments = db
       .prepare(
-        `SELECT d.*, u.full_name, u.department
+        `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
          FROM duty_assignments d
-         JOIN users u ON u.id = d.user_id
-         ${targetUserId ? 'WHERE d.user_id = ?' : ''}
+         JOIN users u ON u.id = d.employee_id
+         ${targetEmployeeId ? 'WHERE d.employee_id = ?' : ''}
          ORDER BY d.date, u.full_name`
       )
-      .all(...(targetUserId ? [targetUserId] : [])) as any[];
+      .all(...(targetEmployeeId ? [targetEmployeeId] : [])) as any[];
   }
 
   return NextResponse.json({ assignments });
 });
 
-// POST /api/duty — assign/override duty (admin only)
-export const POST = requireAuth(async (req, { user }) => {
-  if (user.role !== 'admin') {
-    return NextResponse.json({ error: 'נדרשות הרשאות מנהל' }, { status: 403 });
-  }
-
+// POST /api/duty — assign duty (admin only)
+export const POST = requireAuth(async (req, { user: _user }) => {
   let body: any;
   try {
     body = await req.json();
@@ -65,8 +63,8 @@ export const POST = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { userId, date, dutyType, duty_type, notes, replaceExisting } = body ?? {};
-  const finalType = dutyType ?? duty_type ?? 'weekend';
+  const { userId, date, dutyType, notes, replaceExisting } = body ?? {};
+  const finalType: DutyAssignment['duty_type'] = dutyType ?? 'regular';
 
   if (!userId || !date) {
     return NextResponse.json({ error: 'נא לציין עובד ותאריך' }, { status: 400 });
@@ -74,9 +72,7 @@ export const POST = requireAuth(async (req, { user }) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     return NextResponse.json({ error: 'פורמט תאריך לא תקין' }, { status: 400 });
   }
-
-  const validTypes: DutyAssignment['duty_type'][] = ['weekend', 'oncall'];
-  if (!validTypes.includes(finalType)) {
+  if (!VALID_DUTY_TYPES.includes(finalType)) {
     return NextResponse.json({ error: 'סוג תורנות לא תקין' }, { status: 400 });
   }
 
@@ -88,30 +84,26 @@ export const POST = requireAuth(async (req, { user }) => {
   }
 
   const assignment = upsertDutyAssignment({
-    user_id: Number(userId),
     date: String(date),
+    employee_id: Number(userId),
     duty_type: finalType,
     notes: notes ?? null,
   });
 
   const fullAssignment = db
     .prepare(
-      `SELECT d.*, u.full_name, u.department
+      `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
        FROM duty_assignments d
-       JOIN users u ON u.id = d.user_id
+       JOIN users u ON u.id = d.employee_id
        WHERE d.id = ?`
     )
     .get((assignment as any).id);
 
   return NextResponse.json({ assignment: fullAssignment }, { status: 201 });
-});
+}, ['admin', 'manager']);
 
-// PATCH /api/duty — update existing assignment (admin only)
-export const PATCH = requireAuth(async (req, { user }) => {
-  if (user.role !== 'admin') {
-    return NextResponse.json({ error: 'נדרשות הרשאות מנהל' }, { status: 403 });
-  }
-
+// PATCH /api/duty — update existing assignment
+export const PATCH = requireAuth(async (req, { user: _user }) => {
   let body: any;
   try {
     body = await req.json();
@@ -119,21 +111,20 @@ export const PATCH = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { id, userId, date, dutyType, duty_type, notes } = body ?? {};
+  const { id, userId, date, dutyType, notes } = body ?? {};
   if (!id) return NextResponse.json({ error: 'נא לציין מזהה תורנות' }, { status: 400 });
 
   const existing = db.prepare('SELECT * FROM duty_assignments WHERE id = ?').get(Number(id)) as any;
   if (!existing) return NextResponse.json({ error: 'תורנות לא נמצאה' }, { status: 404 });
 
-  const nextType = dutyType ?? duty_type ?? existing.duty_type;
-  const validTypes: DutyAssignment['duty_type'][] = ['weekend', 'oncall'];
-  if (!validTypes.includes(nextType)) {
+  const nextType: DutyAssignment['duty_type'] = dutyType ?? existing.duty_type;
+  if (!VALID_DUTY_TYPES.includes(nextType)) {
     return NextResponse.json({ error: 'סוג תורנות לא תקין' }, { status: 400 });
   }
 
-  const nextUserId = userId !== undefined ? Number(userId) : existing.user_id;
+  const nextEmployeeId = userId !== undefined ? Number(userId) : existing.employee_id;
   if (userId !== undefined) {
-    const targetUser = db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').get(nextUserId);
+    const targetUser = db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').get(nextEmployeeId);
     if (!targetUser) return NextResponse.json({ error: 'עובד לא נמצא' }, { status: 404 });
   }
 
@@ -145,30 +136,26 @@ export const PATCH = requireAuth(async (req, { user }) => {
   const updated = db
     .prepare(
       `UPDATE duty_assignments
-       SET user_id = ?, date = ?, duty_type = ?, notes = ?
+       SET employee_id = ?, date = ?, duty_type = ?, notes = ?
        WHERE id = ?
        RETURNING *`
     )
-    .get(nextUserId, String(nextDate), nextType, notes ?? existing.notes ?? null, Number(id)) as any;
+    .get(nextEmployeeId, String(nextDate), nextType, notes ?? existing.notes ?? null, Number(id)) as any;
 
   const fullAssignment = db
     .prepare(
-      `SELECT d.*, u.full_name, u.department
+      `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
        FROM duty_assignments d
-       JOIN users u ON u.id = d.user_id
+       JOIN users u ON u.id = d.employee_id
        WHERE d.id = ?`
     )
     .get(updated.id);
 
   return NextResponse.json({ assignment: fullAssignment });
-});
+}, ['admin', 'manager']);
 
-// DELETE /api/duty — remove assignment (admin only)
-export const DELETE = requireAuth(async (req, { user }) => {
-  if (user.role !== 'admin') {
-    return NextResponse.json({ error: 'נדרשות הרשאות מנהל' }, { status: 403 });
-  }
-
+// DELETE /api/duty — remove assignment
+export const DELETE = requireAuth(async (req, { user: _user }) => {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'נא לציין מזהה תורנות' }, { status: 400 });
@@ -178,4 +165,4 @@ export const DELETE = requireAuth(async (req, { user }) => {
 
   db.prepare('DELETE FROM duty_assignments WHERE id = ?').run(Number(id));
   return NextResponse.json({ success: true, message: 'התורנות נמחקה' });
-});
+}, ['admin', 'manager']);

@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Users,
   LayoutDashboard,
-  ClipboardList,
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
@@ -32,11 +31,10 @@ export interface MobileNavProps {
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard',   label: 'בית',        icon: LayoutDashboard },
-  { href: '/schedule',    label: 'לוח זמנים',  icon: CalendarDays },
-  { href: '/duty',        label: 'תורנויות',   icon: ShieldCheck },
-  { href: '/constraints', label: 'אילוצים',    icon: ClipboardList },
-  { href: '/employees',   label: 'עובדים',     icon: Users, adminOnly: true },
+  { href: '/dashboard', label: 'בית',        icon: LayoutDashboard },
+  { href: '/schedule',  label: 'משמרות',     icon: CalendarDays },
+  { href: '/duty',      label: 'תורנויות',   icon: ShieldCheck },
+  { href: '/admin',     label: 'ניהול',      icon: Users, adminOnly: true },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────

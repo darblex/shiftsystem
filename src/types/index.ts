@@ -4,13 +4,25 @@
 
 export type Role = 'admin' | 'manager' | 'employee';
 
-export type ScheduleType = 'home' | 'office' | 'holiday' | 'weekend_duty' | 'vacation' | 'sick';
+export type ShiftType =
+  | 'morning'       // בוקר 06:00-14:00
+  | 'afternoon'     // צהריים 14:00-22:00
+  | 'night'         // לילה 22:00-06:00
+  | 'day_off'       // חופש
+  | 'holiday'       // חג
+  | 'duty'          // תורנות רגילה
+  | 'weekend_duty'  // תורנות סופ"ש
+  | 'sick'          // מחלה
+  | 'vacation';     // חופשה
 
-export type ConstraintPreference = 'prefer_home' | 'prefer_office' | 'no_preference' | 'fixed_home' | 'fixed_office';
+export type ConstraintPreference =
+  | 'prefer_morning'
+  | 'prefer_afternoon'
+  | 'prefer_night'
+  | 'no_preference'
+  | 'fixed_morning'
+  | 'fixed_afternoon';
 
-// -------------------------------------------------------
-// User
-// -------------------------------------------------------
 export interface User {
   id: number;
   username: string;
@@ -19,100 +31,69 @@ export interface User {
   role: Role;
   department?: string;
   phone?: string;
-  active: boolean;
+  active: number;
   created_at: string;
   updated_at: string;
-  // password_hash intentionally omitted from the public shape
 }
 
 export interface UserWithHash extends User {
   password_hash: string;
 }
 
-// -------------------------------------------------------
-// Schedule entry
-// -------------------------------------------------------
-export interface ScheduleEntry {
+export interface ShiftEntry {
   id: number;
   user_id: number;
-  date: string; // ISO yyyy-MM-dd
-  schedule_type: ScheduleType;
+  date: string;          // YYYY-MM-DD
+  shift_type: ShiftType;
   notes?: string;
   approved_by?: number;
   created_at: string;
 }
 
-// -------------------------------------------------------
-// Constraints (per-employee monthly / weekly preferences)
-// -------------------------------------------------------
-export interface ConstraintRecord {
+export interface DutyAssignment {
   id: number;
-  user_id: number;
-  year: number;
-  month: number; // 1-12
-  preference: ConstraintPreference;
-  max_office_days?: number;
-  max_home_days?: number;
-  unavailable_dates?: string; // JSON array of "yyyy-MM-dd"
+  date: string;          // YYYY-MM-DD
+  employee_id: number;
+  employee_name?: string;
+  duty_type: 'regular' | 'weekend' | 'holiday';
   notes?: string;
-  created_at: string;
 }
 
-// -------------------------------------------------------
-// Holiday
-// -------------------------------------------------------
 export interface Holiday {
   id?: number;
-  date: string; // ISO yyyy-MM-dd
+  date: string;
   name_he: string;
   name_en: string;
   type: 'public' | 'eve' | 'memorial';
   year?: number;
 }
 
-// -------------------------------------------------------
-// Duty Assignment (weekend / on-call)
-// -------------------------------------------------------
-export interface DutyAssignment {
-  id: number;
+export interface ConstraintRecord {
+  id?: number;
   user_id: number;
-  date: string; // ISO yyyy-MM-dd — Saturday of the duty weekend
-  duty_type: 'weekend' | 'oncall';
-  notes?: string;
-  created_at: string;
-}
-
-// -------------------------------------------------------
-// Attendance
-// -------------------------------------------------------
-export interface AttendanceRecord {
-  id: number;
-  user_id: number;
-  date: string; // ISO yyyy-MM-dd
-  check_in?: string; // HH:mm
-  check_out?: string; // HH:mm
-  location: 'home' | 'office' | 'unknown';
-  hours_worked?: number;
-  notes?: string;
-  created_at: string;
-}
-
-// -------------------------------------------------------
-// Helpers for schedule generation
-// -------------------------------------------------------
-export interface MonthSchedule {
-  userId: number;
   year: number;
   month: number;
-  entries: ScheduleEntry[];
-  officeDays: number;
-  homeDays: number;
-  dutyWeekend?: string;
+  preference: ConstraintPreference;
+  notes?: string;
+  created_at?: string;
 }
 
 export interface GenerateMonthOptions {
   year: number;
-  month: number; // 1-12
-  userIds?: number[];
+  month: number;
   overwrite?: boolean;
+}
+
+export interface MonthSchedule {
+  [userId: string]: {
+    [date: string]: ShiftEntry;
+  };
+}
+
+export interface JwtPayload {
+  userId: number;
+  username: string;
+  role: Role;
+  iat?: number;
+  exp?: number;
 }

@@ -147,7 +147,7 @@ export const PATCH = requireAuth(async (req, { user }) => {
       updates.email = String(email).toLowerCase().trim();
     }
     if (department !== undefined) updates.department = department;
-    if (active !== undefined) updates.active = Boolean(active);
+    if (active !== undefined) updates.active = active ? 1 : 0;
   }
 
   if (isAdmin) {
@@ -198,7 +198,7 @@ export const DELETE = requireAuth(
     if (!target) return NextResponse.json({ error: 'עובד לא נמצא' }, { status: 404 });
 
     // Soft delete via updateUser
-    updateUser(Number(id), { active: false });
+    updateUser(Number(id), { active: 0 });
     return NextResponse.json({ success: true, message: 'עובד הוסר מהמערכת' });
   },
   ['admin']

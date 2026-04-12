@@ -10,11 +10,10 @@ import { ISRAELI_HOLIDAYS } from './holidays';
 import type {
   User,
   UserWithHash,
-  ScheduleEntry,
+  ShiftEntry,
   ConstraintRecord,
   Holiday,
   DutyAssignment,
-  AttendanceRecord,
 } from '@/types';
 
 // ── Database path ────────────────────────────────────────────────────────────
@@ -33,25 +32,15 @@ declare global {
 }
 
 function getDb(): Database.Database {
-  // During Next.js static build (phase export), skip DB init to avoid lock conflicts
   if (process.env.NEXT_PHASE === 'phase-export' || process.env.NEXT_PHASE === 'phase-production-build') {
-    // Return a mock db during build that won't be used
     return {} as Database.Database;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    if (!global.__db) {
-      global.__db = new Database(DB_PATH);
-      initDb(global.__db);
-    }
-    return global.__db;
-  } else {
-    if (!global.__db) {
-      global.__db = new Database(DB_PATH);
-      initDb(global.__db);
-    }
-    return global.__db;
+  if (!global.__db) {
+    global.__db = new Database(DB_PATH);
+    initDb(global.__db);
   }
+  return global.__db;
 }
 
 function initDb(database: Database.Database) {
@@ -76,31 +65,28 @@ function initDb(database: Database.Database) {
     updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
-  CREATE TABLE IF NOT EXISTS schedule_entries (
+  CREATE TABLE IF NOT EXISTS shifts (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     date          TEXT    NOT NULL,
-    schedule_type TEXT    NOT NULL CHECK(schedule_type IN ('home','office','holiday','weekend_duty','vacation','sick')),
+    shift_type    TEXT    NOT NULL CHECK(shift_type IN ('morning','afternoon','night','day_off','holiday','duty','weekend_duty','sick','vacation')),
     notes         TEXT,
     approved_by   INTEGER REFERENCES users(id),
     created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE(user_id, date)
   );
 
-  CREATE INDEX IF NOT EXISTS idx_schedule_user_date ON schedule_entries(user_id, date);
-  CREATE INDEX IF NOT EXISTS idx_schedule_date      ON schedule_entries(date);
+  CREATE INDEX IF NOT EXISTS idx_shifts_user_date ON shifts(user_id, date);
+  CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date);
 
   CREATE TABLE IF NOT EXISTS constraints (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    year              INTEGER NOT NULL,
-    month             INTEGER NOT NULL,
-    preference        TEXT    NOT NULL DEFAULT 'no_preference',
-    max_office_days   INTEGER,
-    max_home_days     INTEGER,
-    unavailable_dates TEXT    DEFAULT '[]',
-    notes             TEXT,
-    created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    year        INTEGER NOT NULL,
+    month       INTEGER NOT NULL,
+    preference  TEXT    NOT NULL DEFAULT 'no_preference',
+    notes       TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE(user_id, year, month)
   );
 
@@ -117,101 +103,95 @@ function initDb(database: Database.Database) {
   CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date);
 
   CREATE TABLE IF NOT EXISTS duty_assignments (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    date       TEXT    NOT NULL,
-    duty_type  TEXT    NOT NULL DEFAULT 'weekend' CHECK(duty_type IN ('weekend','oncall')),
-    notes      TEXT,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, date, duty_type)
-  );
-
-  CREATE TABLE IF NOT EXISTS attendance (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    date         TEXT    NOT NULL,
-    check_in     TEXT,
-    check_out    TEXT,
-    location     TEXT    NOT NULL DEFAULT 'unknown' CHECK(location IN ('home','office','unknown')),
-    hours_worked REAL,
-    notes        TEXT,
-    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, date)
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    date        TEXT    NOT NULL,
+    employee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    duty_type   TEXT    NOT NULL DEFAULT 'regular' CHECK(duty_type IN ('regular','weekend','holiday')),
+    notes       TEXT,
+    UNIQUE(employee_id, date)
   );
 `);
 
-// ── Seed helpers ─────────────────────────────────────────────────────────────
+  // ── Seed helpers ─────────────────────────────────────────────────────────────
 
-function seedUsers(db: Database.Database): void {
-  const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
-  if (count > 0) return;
+  function seedUsers(db: Database.Database): void {
+    const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
+    if (count > 0) return;
 
-  const insert = db.prepare(`
-    INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash)
-    VALUES (@username, @email, @full_name, @role, @department, @password_hash)
-  `);
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash)
+      VALUES (@username, @email, @full_name, @role, @department, @password_hash)
+    `);
 
-  const employees: Array<Omit<UserWithHash, 'id' | 'active' | 'created_at' | 'updated_at' | 'phone'>> = [
-    {
-      username: 'admin',
-      email: 'admin@shiftsystem.local',
-      full_name: 'מנהל מערכת',
-      role: 'admin',
-      department: 'IT',
-      password_hash: bcrypt.hashSync('admin', 12),
-    },
-    {
-      username: 'yossi',
-      email: 'yossi@shiftsystem.local',
-      full_name: 'יוסי כהן',
-      role: 'employee',
-      department: 'פיתוח',
-      password_hash: bcrypt.hashSync('employee1', 12),
-    },
-    {
-      username: 'michal',
-      email: 'michal@shiftsystem.local',
-      full_name: 'מיכל לוי',
-      role: 'employee',
-      department: 'פיתוח',
-      password_hash: bcrypt.hashSync('employee2', 12),
-    },
-    {
-      username: 'avi',
-      email: 'avi@shiftsystem.local',
-      full_name: 'אבי ישראלי',
-      role: 'manager',
-      department: 'פיתוח',
-      password_hash: bcrypt.hashSync('manager1', 12),
-    },
-  ];
+    const employees: Array<Omit<UserWithHash, 'id' | 'active' | 'created_at' | 'updated_at' | 'phone'>> = [
+      {
+        username: 'admin',
+        email: 'admin@shiftsystem.local',
+        full_name: 'מנהל מערכת',
+        role: 'admin',
+        department: 'IT',
+        password_hash: bcrypt.hashSync('admin', 12),
+      },
+      {
+        username: 'yossi',
+        email: 'yossi@shiftsystem.local',
+        full_name: 'יוסי כהן',
+        role: 'employee',
+        department: 'פיתוח',
+        password_hash: bcrypt.hashSync('employee1', 12),
+      },
+      {
+        username: 'michal',
+        email: 'michal@shiftsystem.local',
+        full_name: 'מיכל לוי',
+        role: 'employee',
+        department: 'פיתוח',
+        password_hash: bcrypt.hashSync('employee2', 12),
+      },
+      {
+        username: 'avi',
+        email: 'avi@shiftsystem.local',
+        full_name: 'אבי ישראלי',
+        role: 'manager',
+        department: 'פיתוח',
+        password_hash: bcrypt.hashSync('manager1', 12),
+      },
+      {
+        username: 'dana',
+        email: 'dana@shiftsystem.local',
+        full_name: 'דנה שפירא',
+        role: 'employee',
+        department: 'תפעול',
+        password_hash: bcrypt.hashSync('employee3', 12),
+      },
+    ];
 
-  const seedMany = db.transaction((rows: typeof employees) => {
-    for (const row of rows) {
-      insert.run(row);
-    }
-  });
+    const seedMany = db.transaction((rows: typeof employees) => {
+      for (const row of rows) {
+        insert.run(row);
+      }
+    });
 
-  seedMany(employees);
-}
+    seedMany(employees);
+  }
 
-function seedHolidays(db: Database.Database): void {
-  const count = (db.prepare('SELECT COUNT(*) as c FROM holidays').get() as { c: number }).c;
-  if (count > 0) return;
+  function seedHolidays(db: Database.Database): void {
+    const count = (db.prepare('SELECT COUNT(*) as c FROM holidays').get() as { c: number }).c;
+    if (count > 0) return;
 
-  const insert = db.prepare(`
-    INSERT OR IGNORE INTO holidays (date, name_he, name_en, type, year)
-    VALUES (@date, @name_he, @name_en, @type, @year)
-  `);
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO holidays (date, name_he, name_en, type, year)
+      VALUES (@date, @name_he, @name_en, @type, @year)
+    `);
 
-  const insertAll = db.transaction((holidays: Holiday[]) => {
-    for (const h of holidays) {
-      insert.run(h);
-    }
-  });
+    const insertAll = db.transaction((holidays: Holiday[]) => {
+      for (const h of holidays) {
+        insert.run(h);
+      }
+    });
 
-  insertAll(ISRAELI_HOLIDAYS);
-}
+    insertAll(ISRAELI_HOLIDAYS);
+  }
 
   // Run seeds once
   seedUsers(database);
@@ -228,13 +208,12 @@ export const db: Database.Database = new Proxy({} as Database.Database, {
 // ── User helpers ─────────────────────────────────────────────────────────────
 
 export function getUserById(id: number): User | undefined {
-  const row = db
+  return db
     .prepare(
       `SELECT id, username, email, full_name, role, department, phone, active, created_at, updated_at
        FROM users WHERE id = ?`
     )
     .get(id) as User | undefined;
-  return row;
 }
 
 export function getUserByUsername(username: string): UserWithHash | undefined {
@@ -261,14 +240,13 @@ export function createUser(data: {
   phone?: string;
   password_hash: string;
 }): User {
-  const result = db
+  return db
     .prepare(
       `INSERT OR IGNORE INTO users (username, email, full_name, role, department, phone, password_hash)
        VALUES (@username, @email, @full_name, @role, @department, @phone, @password_hash)
        RETURNING id, username, email, full_name, role, department, phone, active, created_at, updated_at`
     )
     .get(data) as User;
-  return result;
 }
 
 export function updateUser(
@@ -289,57 +267,55 @@ export function updateUser(
     .get({ ...data, id }) as User | undefined;
 }
 
-// ── Schedule helpers ──────────────────────────────────────────────────────────
+// ── Shift helpers ─────────────────────────────────────────────────────────────
 
-export function getScheduleForMonth(userId: number, year: number, month: number): ScheduleEntry[] {
+export function getShiftsForMonth(year: number, month: number, userId?: number): ShiftEntry[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  if (userId !== undefined) {
+    return db
+      .prepare(`SELECT * FROM shifts WHERE user_id = ? AND date LIKE ? ORDER BY date`)
+      .all(userId, `${prefix}%`) as ShiftEntry[];
+  }
+  return db
+    .prepare(`SELECT * FROM shifts WHERE date LIKE ? ORDER BY date`)
+    .all(`${prefix}%`) as ShiftEntry[];
+}
+
+export function getAllShiftsForMonth(year: number, month: number): ShiftEntry[] {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
   return db
     .prepare(
-      `SELECT * FROM schedule_entries
-       WHERE user_id = ? AND date LIKE ?
-       ORDER BY date`
+      `SELECT s.*, u.full_name, u.department
+       FROM shifts s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.date LIKE ?
+       ORDER BY s.date, u.full_name`
     )
-    .all(userId, `${prefix}%`) as ScheduleEntry[];
+    .all(`${prefix}%`) as ShiftEntry[];
 }
 
-export function getAllScheduleForMonth(year: number, month: number): ScheduleEntry[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+export function upsertShift(entry: Omit<ShiftEntry, 'id' | 'created_at'>): ShiftEntry {
   return db
     .prepare(
-      `SELECT se.*, u.full_name, u.department
-       FROM schedule_entries se
-       JOIN users u ON u.id = se.user_id
-       WHERE se.date LIKE ?
-       ORDER BY se.date, u.full_name`
-    )
-    .all(`${prefix}%`) as ScheduleEntry[];
-}
-
-export function upsertScheduleEntry(entry: Omit<ScheduleEntry, 'id' | 'created_at'>): ScheduleEntry {
-  return db
-    .prepare(
-      `INSERT INTO schedule_entries (user_id, date, schedule_type, notes, approved_by)
-       VALUES (@user_id, @date, @schedule_type, @notes, @approved_by)
+      `INSERT INTO shifts (user_id, date, shift_type, notes, approved_by)
+       VALUES (@user_id, @date, @shift_type, @notes, @approved_by)
        ON CONFLICT(user_id, date) DO UPDATE SET
-         schedule_type = excluded.schedule_type,
-         notes         = excluded.notes,
-         approved_by   = excluded.approved_by
+         shift_type  = excluded.shift_type,
+         notes       = excluded.notes,
+         approved_by = excluded.approved_by
        RETURNING *`
     )
-    .get(entry) as ScheduleEntry;
+    .get(entry) as ShiftEntry;
 }
 
-export function deleteScheduleEntry(userId: number, date: string): void {
-  db.prepare(`DELETE FROM schedule_entries WHERE user_id = ? AND date = ?`).run(userId, date);
-}
-
-export function bulkInsertSchedule(entries: Omit<ScheduleEntry, 'id' | 'created_at'>[]): void {
+export function bulkUpsertShifts(entries: Array<Omit<ShiftEntry, 'id' | 'created_at'>>): void {
   const insert = db.prepare(`
-    INSERT INTO schedule_entries (user_id, date, schedule_type, notes, approved_by)
-    VALUES (@user_id, @date, @schedule_type, @notes, @approved_by)
+    INSERT INTO shifts (user_id, date, shift_type, notes, approved_by)
+    VALUES (@user_id, @date, @shift_type, @notes, @approved_by)
     ON CONFLICT(user_id, date) DO UPDATE SET
-      schedule_type = excluded.schedule_type,
-      notes         = excluded.notes
+      shift_type  = excluded.shift_type,
+      notes       = excluded.notes,
+      approved_by = excluded.approved_by
   `);
   const insertAll = db.transaction((rows: typeof entries) => {
     for (const row of rows) {
@@ -347,6 +323,74 @@ export function bulkInsertSchedule(entries: Omit<ScheduleEntry, 'id' | 'created_
     }
   });
   insertAll(entries);
+}
+
+export function deleteShift(userId: number, date: string): void {
+  db.prepare(`DELETE FROM shifts WHERE user_id = ? AND date = ?`).run(userId, date);
+}
+
+export function copyShiftsToMonth(
+  userId: number,
+  fromYear: number,
+  fromMonth: number,
+  toYear: number,
+  toMonth: number
+): number {
+  const fromPrefix = `${fromYear}-${String(fromMonth).padStart(2, '0')}`;
+  const toPrefix = `${toYear}-${String(toMonth).padStart(2, '0')}`;
+
+  // Get source shifts
+  const sourceShifts = db
+    .prepare(
+      `SELECT * FROM shifts WHERE user_id = ? AND date LIKE ? AND shift_type != 'holiday'`
+    )
+    .all(userId, `${fromPrefix}%`) as ShiftEntry[];
+
+  if (sourceShifts.length === 0) return 0;
+
+  // Get holiday dates in target month (to skip)
+  const holidayRows = db
+    .prepare(`SELECT date FROM holidays WHERE date LIKE ?`)
+    .all(`${toPrefix}%`) as { date: string }[];
+  const holidaySet = new Set(holidayRows.map((h) => h.date));
+
+  // Map day-of-month from source to target
+  const insert = db.prepare(`
+    INSERT INTO shifts (user_id, date, shift_type, notes, approved_by)
+    VALUES (@user_id, @date, @shift_type, @notes, @approved_by)
+    ON CONFLICT(user_id, date) DO UPDATE SET
+      shift_type  = excluded.shift_type,
+      notes       = excluded.notes,
+      approved_by = excluded.approved_by
+  `);
+
+  let count = 0;
+  const insertAll = db.transaction(() => {
+    for (const s of sourceShifts) {
+      const day = s.date.slice(8, 10); // DD part
+      const targetDate = `${toPrefix}-${day}`;
+
+      // Validate target date exists in the target month
+      const testDate = new Date(`${targetDate}T00:00:00`);
+      if (
+        testDate.getMonth() + 1 !== toMonth ||
+        testDate.getFullYear() !== toYear
+      ) continue;
+
+      if (holidaySet.has(targetDate)) continue;
+
+      insert.run({
+        user_id: userId,
+        date: targetDate,
+        shift_type: s.shift_type,
+        notes: s.notes ?? null,
+        approved_by: null,
+      });
+      count++;
+    }
+  });
+  insertAll();
+  return count;
 }
 
 // ── Constraints helpers ───────────────────────────────────────────────────────
@@ -357,19 +401,14 @@ export function getConstraints(userId: number, year: number, month: number): Con
     .get(userId, year, month) as ConstraintRecord | undefined;
 }
 
-export function upsertConstraints(
-  data: Omit<ConstraintRecord, 'id' | 'created_at'>
-): ConstraintRecord {
+export function upsertConstraints(data: Omit<ConstraintRecord, 'id' | 'created_at'>): ConstraintRecord {
   return db
     .prepare(
-      `INSERT INTO constraints (user_id, year, month, preference, max_office_days, max_home_days, unavailable_dates, notes)
-       VALUES (@user_id, @year, @month, @preference, @max_office_days, @max_home_days, @unavailable_dates, @notes)
+      `INSERT INTO constraints (user_id, year, month, preference, notes)
+       VALUES (@user_id, @year, @month, @preference, @notes)
        ON CONFLICT(user_id, year, month) DO UPDATE SET
-         preference        = excluded.preference,
-         max_office_days   = excluded.max_office_days,
-         max_home_days     = excluded.max_home_days,
-         unavailable_dates = excluded.unavailable_dates,
-         notes             = excluded.notes
+         preference = excluded.preference,
+         notes      = excluded.notes
        RETURNING *`
     )
     .get(data) as ConstraintRecord;
@@ -380,48 +419,31 @@ export function upsertConstraints(
 export function getDutyAssignmentsForMonth(year: number, month: number): DutyAssignment[] {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
   return db
-    .prepare(`SELECT * FROM duty_assignments WHERE date LIKE ? ORDER BY date`)
+    .prepare(
+      `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
+       FROM duty_assignments d
+       JOIN users u ON u.id = d.employee_id
+       WHERE d.date LIKE ? ORDER BY d.date`
+    )
     .all(`${prefix}%`) as DutyAssignment[];
 }
 
-export function upsertDutyAssignment(
-  data: Omit<DutyAssignment, 'id' | 'created_at'>
-): DutyAssignment {
+export function upsertDutyAssignment(data: {
+  date: string;
+  employee_id: number;
+  duty_type: DutyAssignment['duty_type'];
+  notes?: string | null;
+}): DutyAssignment {
   return db
     .prepare(
-      `INSERT INTO duty_assignments (user_id, date, duty_type, notes)
-       VALUES (@user_id, @date, @duty_type, @notes)
-       ON CONFLICT(user_id, date, duty_type) DO UPDATE SET notes = excluded.notes
+      `INSERT INTO duty_assignments (date, employee_id, duty_type, notes)
+       VALUES (@date, @employee_id, @duty_type, @notes)
+       ON CONFLICT(employee_id, date) DO UPDATE SET
+         duty_type = excluded.duty_type,
+         notes     = excluded.notes
        RETURNING *`
     )
     .get(data) as DutyAssignment;
-}
-
-// ── Attendance helpers ────────────────────────────────────────────────────────
-
-export function getAttendanceForMonth(userId: number, year: number, month: number): AttendanceRecord[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
-  return db
-    .prepare(`SELECT * FROM attendance WHERE user_id = ? AND date LIKE ? ORDER BY date`)
-    .all(userId, `${prefix}%`) as AttendanceRecord[];
-}
-
-export function upsertAttendance(
-  data: Omit<AttendanceRecord, 'id' | 'created_at'>
-): AttendanceRecord {
-  return db
-    .prepare(
-      `INSERT INTO attendance (user_id, date, check_in, check_out, location, hours_worked, notes)
-       VALUES (@user_id, @date, @check_in, @check_out, @location, @hours_worked, @notes)
-       ON CONFLICT(user_id, date) DO UPDATE SET
-         check_in     = excluded.check_in,
-         check_out    = excluded.check_out,
-         location     = excluded.location,
-         hours_worked = excluded.hours_worked,
-         notes        = excluded.notes
-       RETURNING *`
-    )
-    .get(data) as AttendanceRecord;
 }
 
 // ── Holiday helpers (from DB) ─────────────────────────────────────────────────

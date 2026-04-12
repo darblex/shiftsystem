@@ -5,18 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  CalendarDays,
-  Users,
   LayoutDashboard,
-  ClipboardList,
+  CalendarRange,
+  CalendarDays,
   ShieldCheck,
+  Settings,
   LogOut,
   ChevronRight,
-  Settings,
   type LucideIcon,
 } from 'lucide-react';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface SidebarItem {
   href: string;
@@ -41,47 +38,33 @@ export interface SidebarProps {
   className?: string;
 }
 
-// ─── Defaults ────────────────────────────────────────────────────────────────
-
 const DEFAULT_ITEMS: SidebarItem[] = [
-  { href: '/dashboard',   label: 'דשבורד',     icon: LayoutDashboard },
-  { href: '/schedule',    label: 'לוח זמנים',  icon: CalendarDays },
-  { href: '/duty',        label: 'תורנויות',   icon: ShieldCheck },
-  { href: '/constraints', label: 'אילוצים',    icon: ClipboardList },
-  { href: '/employees',   label: 'עובדים',     icon: Users,         adminOnly: true },
-  { href: '/settings',    label: 'הגדרות',     icon: Settings },
+  { href: '/dashboard', label: 'לוח בקרה',       icon: LayoutDashboard },
+  { href: '/schedule',  label: 'לוח משמרות',     icon: CalendarRange },
+  { href: '/duty',      label: 'תורנויות',       icon: ShieldCheck },
+  { href: '/admin',     label: 'ניהול',           icon: Settings, adminOnly: true },
 ];
 
-// ─── Avatar ──────────────────────────────────────────────────────────────────
-
-function SidebarAvatar({ user }: { user?: SidebarUser }) {
-  const initials = user?.name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('') ?? '?';
-
+function Avatar({ user }: { user?: SidebarUser }) {
+  const initials = (user?.name ?? '?').split(' ').slice(0, 2).map((w) => w[0]).join('');
   return (
     <div className="relative w-9 h-9 shrink-0">
       {user?.avatarUrl ? (
-        <img
-          src={user.avatarUrl}
-          alt={user.name}
-          className="w-full h-full rounded-full object-cover ring-2 ring-white/10"
-        />
+        <img src={user.avatarUrl} alt={user.name} className="w-full h-full rounded-full object-cover" />
       ) : (
-        <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10">
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-white text-sm font-bold"
+          style={{ background: 'linear-gradient(135deg, #2563eb, #a855f7)' }}
+        >
           {initials}
         </div>
       )}
-      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-zinc-950" />
+      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 bg-emerald-400" style={{ borderColor: 'var(--bg-card)' }} />
     </div>
   );
 }
 
-// ─── NavLink ─────────────────────────────────────────────────────────────────
-
-function SidebarLink({ item, collapsed }: { item: SidebarItem; collapsed: boolean }) {
+function NavLink({ item, collapsed }: { item: SidebarItem; collapsed: boolean }) {
   const pathname = usePathname();
   const Icon = item.icon;
   const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -89,29 +72,23 @@ function SidebarLink({ item, collapsed }: { item: SidebarItem; collapsed: boolea
   return (
     <Link
       href={item.href}
-      className={`
-        relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-        transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-blue-500/40
-        ${active
-          ? 'bg-blue-500/20 text-blue-300'
-          : 'text-zinc-400 hover:text-white hover:bg-white/8'
-        }
-      `}
-      aria-current={active ? 'page' : undefined}
+      className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all focus:outline-none group"
+      style={{
+        color: active ? '#93c5fd' : 'var(--muted)',
+        background: active ? 'rgba(59,130,246,0.12)' : 'transparent',
+      }}
       title={collapsed ? item.label : undefined}
     >
       {active && (
         <motion.span
-          layoutId="sidebar-indicator"
-          className="absolute inset-0 rounded-xl bg-blue-500/15 border border-blue-500/25"
-          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+          layoutId="sidebar-active"
+          className="absolute inset-0 rounded-xl"
+          style={{ background: 'rgba(59,130,246,0.10)', border: '1px solid rgba(59,130,246,0.25)' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
       <div className="relative z-10 shrink-0">
-        <Icon
-          className={`w-5 h-5 transition-colors ${active ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'}`}
-          strokeWidth={active ? 2.2 : 1.8}
-        />
+        <Icon className="w-5 h-5" style={{ color: active ? '#60a5fa' : 'var(--muted)' }} strokeWidth={active ? 2.2 : 1.8} />
         {item.badge != null && item.badge > 0 && (
           <span className="absolute -top-1 -left-1 min-w-[15px] h-[15px] rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
             {item.badge > 99 ? '99+' : item.badge}
@@ -135,38 +112,22 @@ function SidebarLink({ item, collapsed }: { item: SidebarItem; collapsed: boolea
   );
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
-export function Sidebar({
-  user,
-  isAdmin = false,
-  items,
-  onLogout,
-  className = '',
-}: SidebarProps) {
+export function Sidebar({ user, isAdmin = false, items, onLogout, className = '' }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-
-  const navItems = (items ?? DEFAULT_ITEMS).filter(
-    (item) => !item.adminOnly || isAdmin
-  );
+  const navItems = (items ?? DEFAULT_ITEMS).filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
       dir="rtl"
-      className={`
-        hidden md:flex flex-col
-        ${collapsed ? 'w-[68px]' : 'w-[240px]'}
-        transition-all duration-300 ease-in-out
-        bg-zinc-950/60 backdrop-blur-xl
-        border-l border-white/10
-        h-screen sticky top-0
-        overflow-hidden
-        ${className}
-      `}
-      aria-label="תפריט צד"
+      className={`hidden md:flex flex-col h-screen sticky top-0 transition-all duration-300 ease-in-out overflow-hidden ${className}`}
+      style={{
+        width: collapsed ? 68 : 240,
+        background: 'var(--bg-card)',
+        borderLeft: '1px solid var(--border)',
+      }}
     >
-      {/* Brand / collapse toggle */}
-      <div className="flex items-center justify-between px-3 py-4 border-b border-white/10">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <AnimatePresence initial={false}>
           {!collapsed && (
             <motion.div
@@ -176,16 +137,17 @@ export function Sidebar({
               transition={{ duration: 0.15 }}
               className="flex items-center gap-2 overflow-hidden"
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                S
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
+                <CalendarDays className="w-4 h-4" />
               </div>
-              <span className="text-white font-semibold text-sm truncate">ShiftSystem</span>
+              <span className="text-white font-semibold text-sm truncate">לוח משמרות</span>
             </motion.div>
           )}
         </AnimatePresence>
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors shrink-0"
+          className="p-1.5 rounded-lg transition-colors shrink-0"
+          style={{ color: 'var(--muted)' }}
           aria-label={collapsed ? 'פתח תפריט' : 'צמצם תפריט'}
         >
           <motion.div animate={{ rotate: collapsed ? 180 : 0 }} transition={{ duration: 0.25 }}>
@@ -194,17 +156,17 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Nav items */}
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
         {navItems.map((item) => (
-          <SidebarLink key={item.href} item={item} collapsed={collapsed} />
+          <NavLink key={item.href} item={item} collapsed={collapsed} />
         ))}
       </nav>
 
-      {/* User footer */}
-      <div className="border-t border-white/10 p-2">
+      {/* Footer */}
+      <div className="p-2" style={{ borderTop: '1px solid var(--border)' }}>
         <div className={`flex items-center gap-3 px-2 py-2 ${collapsed ? 'justify-center' : ''}`}>
-          <SidebarAvatar user={user} />
+          <Avatar user={user} />
           <AnimatePresence initial={false}>
             {!collapsed && (
               <motion.div
@@ -215,14 +177,15 @@ export function Sidebar({
                 className="flex-1 min-w-0 overflow-hidden"
               >
                 <p className="text-xs font-medium text-white truncate">{user?.name ?? 'משתמש'}</p>
-                <p className="text-[10px] text-zinc-500 truncate">{user?.role}</p>
+                <p className="text-[10px] truncate" style={{ color: 'var(--muted)' }}>{user?.role}</p>
               </motion.div>
             )}
           </AnimatePresence>
           {!collapsed && onLogout && (
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-rose-400 transition-colors shrink-0"
+              className="p-1.5 rounded-lg transition-colors shrink-0"
+              style={{ color: 'var(--muted)' }}
               aria-label="התנתקות"
             >
               <LogOut className="w-4 h-4" />

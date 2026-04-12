@@ -1,21 +1,26 @@
 export const dynamic = 'force-dynamic';
 // ============================================================
-// app/api/schedule/route.ts — Monthly schedule CRUD
+// app/api/schedule/route.ts — Monthly schedule CRUD (redirects to shifts)
 // ============================================================
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import {
   db,
-  getScheduleForMonth,
-  getAllScheduleForMonth,
-  upsertScheduleEntry,
+  getShiftsForMonth,
+  getAllShiftsForMonth,
+  upsertShift,
+  deleteShift,
 } from '@/lib/db';
 import { generateMonthSchedule } from '@/lib/schedule';
-import type { ScheduleType } from '@/types';
+import type { ShiftType } from '@/types';
 
-// GET /api/schedule — fetch schedule entries
-// ?year=2026&month=4 [&userId=X]
+const VALID_SHIFT_TYPES: ShiftType[] = [
+  'morning', 'afternoon', 'night', 'day_off', 'holiday',
+  'duty', 'weekend_duty', 'sick', 'vacation',
+];
+
+// GET /api/schedule — fetch shifts
 export const GET = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
   const year = Number(searchParams.get('year') ?? new Date().getFullYear());
@@ -26,7 +31,6 @@ export const GET = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'שנה או חודש לא תקינים' }, { status: 400 });
   }
 
-  // Non-admin can only see their own schedule
   let targetUserId: number | null = null;
   if (userIdParam) {
     targetUserId = Number(userIdParam);
@@ -36,20 +40,16 @@ export const GET = requireAuth(async (req, { user }) => {
   }
 
   if (targetUserId) {
-    const entries = getScheduleForMonth(targetUserId, year, month);
+    const entries = getShiftsForMonth(year, month, targetUserId);
     return NextResponse.json({ year, month, userId: targetUserId, entries });
   }
 
   if (user.role === 'employee') {
-    // Employees only see their own
-    const entries = getScheduleForMonth(user.id, year, month);
+    const entries = getShiftsForMonth(year, month, user.id);
     return NextResponse.json({ year, month, userId: user.id, entries });
   }
 
-  // Admin/manager: all users
-  const allEntries = getAllScheduleForMonth(year, month);
-
-  // Group by user
+  const allEntries = getAllShiftsForMonth(year, month);
   const byUser: Record<number, any> = {};
   for (const entry of allEntries as any[]) {
     const uid = entry.user_id;
@@ -67,9 +67,9 @@ export const GET = requireAuth(async (req, { user }) => {
   return NextResponse.json({ year, month, schedule: Object.values(byUser) });
 });
 
-// POST /api/schedule — auto-generate schedule for a month
+// POST /api/schedule — auto-generate schedule
 export const POST = requireAuth(
-  async (req, { user: _admin }) => {
+  async (req) => {
     let body: any;
     try {
       body = await req.json();
@@ -77,16 +77,15 @@ export const POST = requireAuth(
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
     }
 
-    const { year, month, overwrite, userIds } = body ?? {};
+    const { year, month, overwrite } = body ?? {};
 
     if (!year || !month || month < 1 || month > 12) {
       return NextResponse.json({ error: 'שנה או חודש לא תקינים' }, { status: 400 });
     }
 
-    // Check if already exists
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
     const existing = db
-      .prepare('SELECT COUNT(*) as cnt FROM schedule_entries WHERE date LIKE ?')
+      .prepare('SELECT COUNT(*) as cnt FROM shifts WHERE date LIKE ?')
       .get(`${prefix}%`) as any;
 
     if (existing?.cnt > 0 && !overwrite) {
@@ -101,12 +100,11 @@ export const POST = requireAuth(
     }
 
     try {
-      const result = await generateMonthSchedule({ year, month, overwrite: Boolean(overwrite), userIds });
+      const result = await generateMonthSchedule({ year, month, overwrite: Boolean(overwrite) });
       return NextResponse.json({
         success: true,
         message: `לוח זמנים נוצר בהצלחה לחודש ${month}/${year}`,
         usersScheduled: result.length,
-        entries: result.reduce((sum, r) => sum + r.entries.length, 0),
       });
     } catch (err: any) {
       return NextResponse.json(
@@ -118,7 +116,7 @@ export const POST = requireAuth(
   ['admin']
 );
 
-// PATCH /api/schedule — manual override for a single entry
+// PATCH /api/schedule — manual override for a single shift
 export const PATCH = requireAuth(
   async (req, { user: admin }) => {
     let body: any;
@@ -128,37 +126,29 @@ export const PATCH = requireAuth(
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
     }
 
-    const { userId, date, scheduleType, notes } = body ?? {};
+    const { userId, date, shiftType, scheduleType, notes } = body ?? {};
+    const finalShiftType = shiftType ?? scheduleType;
 
-    if (!userId || !date || !scheduleType) {
-      return NextResponse.json(
-        { error: 'נא לציין מזהה עובד, תאריך וסוג משמרת' },
-        { status: 400 }
-      );
+    if (!userId || !date || !finalShiftType) {
+      return NextResponse.json({ error: 'נא לציין מזהה עובד, תאריך וסוג משמרת' }, { status: 400 });
     }
-
-    // Validate date format
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ error: 'פורמט תאריך לא תקין, נדרש: YYYY-MM-DD' }, { status: 400 });
     }
-
-    const validTypes: ScheduleType[] = ['home', 'office', 'holiday', 'weekend_duty', 'vacation', 'sick'];
-    if (!validTypes.includes(scheduleType)) {
+    if (!VALID_SHIFT_TYPES.includes(finalShiftType)) {
       return NextResponse.json(
-        { error: `סוג משמרת לא תקין. אפשרויות: ${validTypes.join(', ')}` },
+        { error: `סוג משמרת לא תקין. אפשרויות: ${VALID_SHIFT_TYPES.join(', ')}` },
         { status: 400 }
       );
     }
 
-    const userCheck = db
-      .prepare('SELECT id FROM users WHERE id = ? AND active = 1')
-      .get(Number(userId));
+    const userCheck = db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').get(Number(userId));
     if (!userCheck) return NextResponse.json({ error: 'עובד לא נמצא' }, { status: 404 });
 
-    const entry = upsertScheduleEntry({
+    const entry = upsertShift({
       user_id: Number(userId),
       date,
-      schedule_type: scheduleType,
+      shift_type: finalShiftType,
       notes: notes ?? null,
       approved_by: admin.id,
     });
@@ -168,9 +158,9 @@ export const PATCH = requireAuth(
   ['admin']
 );
 
-// DELETE /api/schedule — remove entries for a month/user (admin)
+// DELETE /api/schedule — remove shifts for a month/user
 export const DELETE = requireAuth(
-  async (req, { user: _admin }) => {
+  async (req) => {
     const { searchParams } = new URL(req.url);
     const year = Number(searchParams.get('year'));
     const month = Number(searchParams.get('month'));
@@ -178,12 +168,8 @@ export const DELETE = requireAuth(
     const date = searchParams.get('date');
 
     if (date) {
-      // Delete a specific date entry
       if (!userId) return NextResponse.json({ error: 'נא לציין מזהה עובד' }, { status: 400 });
-      db.prepare('DELETE FROM schedule_entries WHERE user_id = ? AND date = ?').run(
-        Number(userId),
-        date
-      );
+      deleteShift(Number(userId), date);
       return NextResponse.json({ success: true, message: 'הרשומה נמחקה' });
     }
 
@@ -193,12 +179,9 @@ export const DELETE = requireAuth(
 
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
     if (userId) {
-      db.prepare('DELETE FROM schedule_entries WHERE user_id = ? AND date LIKE ?').run(
-        Number(userId),
-        `${prefix}%`
-      );
+      db.prepare('DELETE FROM shifts WHERE user_id = ? AND date LIKE ?').run(Number(userId), `${prefix}%`);
     } else {
-      db.prepare('DELETE FROM schedule_entries WHERE date LIKE ?').run(`${prefix}%`);
+      db.prepare('DELETE FROM shifts WHERE date LIKE ?').run(`${prefix}%`);
     }
 
     return NextResponse.json({ success: true, message: 'לוח הזמנים נמחק' });

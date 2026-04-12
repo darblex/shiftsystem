@@ -5,10 +5,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'מערכת משמרות',
-  description: 'ניהול לוח עבודה ומשמרות',
+  description: 'לוח ניהול משמרות לצוות',
   applicationName: 'ShiftSystem',
   authors: [{ name: 'ShiftSystem' }],
-  keywords: ['משמרות', 'לוח עבודה', 'עבודה מהבית', 'תורנות'],
+  keywords: ['משמרות', 'לוח עבודה', 'תורנות', 'ניהול עובדים'],
   robots: 'noindex, nofollow',
 };
 
@@ -16,17 +16,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
-    { media: '(prefers-color-scheme: dark)', color: '#0a0f1e' },
-  ],
+  themeColor: '#0f0f13',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="he"
@@ -34,7 +27,7 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased bg-app text-app-fg min-h-screen selection:bg-primary/20">
+      <body className="font-sans antialiased min-h-screen" style={{ background: 'var(--bg)', color: 'var(--fg)' }}>
         {children}
       </body>
     </html>

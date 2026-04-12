@@ -2,295 +2,320 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, Home, LogOut, Shield, TimerReset, Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Users,
+  CalendarRange,
+  ShieldCheck,
+  Sunrise,
+  Sun,
+  Moon,
+  ChevronLeft,
+  LogOut,
+  Loader2,
+  CalendarDays,
+} from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import MobileNav from '@/components/MobileNav';
-import StatsCards from '@/components/StatsCards';
-import ScheduleCalendar from '@/components/ScheduleCalendar';
-import AttendancePanel from '@/components/AttendancePanel';
-import ConstraintForm from '@/components/ConstraintForm';
-import DutyCalendar from '@/components/DutyCalendar';
+import Link from 'next/link';
 
-type User = {
+interface CurrentUser {
   id: number;
   full_name: string;
   email: string;
   role: 'admin' | 'manager' | 'employee';
   department?: string;
-};
+}
+
+interface ShiftEntry {
+  user_id: number;
+  date: string;
+  schedule_type: string;
+  notes?: string;
+}
+
+interface DutyAssignment {
+  id: number;
+  user_id: number;
+  date: string;
+  duty_type: string;
+  full_name?: string;
+}
+
+interface Employee {
+  id: number;
+  full_name: string;
+  department?: string;
+}
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+  delay,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number | string;
+  accent: string;
+  delay: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4 }}
+      className="data-card p-5 flex items-center gap-4"
+    >
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}>
+        <Icon className="w-6 h-6" style={{ color: accent }} />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>{label}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Shift Group ─────────────────────────────────────────────────────────────
+
+function TodayShiftGroup({
+  icon: Icon,
+  label,
+  color,
+  employees,
+}: {
+  icon: React.ElementType;
+  label: string;
+  color: string;
+  employees: string[];
+}) {
+  if (employees.length === 0) return null;
+  return (
+    <div className="rounded-2xl p-4" style={{ background: `${color}0d`, border: `1px solid ${color}25` }}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="w-4 h-4" style={{ color }} />
+        <span className="text-sm font-semibold" style={{ color }}>{label}</span>
+        <span className="badge-soft text-xs">{employees.length}</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {employees.map((name) => (
+          <span key={name} className="text-xs px-2.5 py-1 rounded-full text-white font-medium" style={{ background: `${color}20` }}>
+            {name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const router = useRouter();
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const todayIso = `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [schedule, setSchedule] = useState<ShiftEntry[]>([]);
+  const [duties, setDuties] = useState<DutyAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scheduleEntries, setScheduleEntries] = useState<any[]>([]);
-  const [attendanceData, setAttendanceData] = useState<any>({ records: [], currentStatus: 'absent', todayRecord: null });
-  const [dutyAssignments, setDutyAssignments] = useState<any[]>([]);
-  const [holidays, setHolidays] = useState<any[]>([]);
-  const [constraintRecord, setConstraintRecord] = useState<any>(null);
-  const [error, setError] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const authRes = await fetch('/api/auth', { credentials: 'include' });
-      if (!authRes.ok) {
-        router.push('/login');
-        return;
-      }
+      if (!authRes.ok) { router.push('/login'); return; }
       const authJson = await authRes.json();
-      const currentUser = authJson.user as User;
-      setUser(currentUser);
+      setUser(authJson.user);
 
-      const [scheduleRes, attendanceRes, dutyRes, holidayRes, constraintsRes] = await Promise.all([
+      const [empRes, schedRes, dutyRes] = await Promise.all([
+        fetch('/api/employees', { credentials: 'include' }),
         fetch(`/api/schedule?year=${year}&month=${month}`, { credentials: 'include' }),
-        fetch(`/api/attendance?year=${year}&month=${month}`, { credentials: 'include' }),
         fetch(`/api/duty?year=${year}&month=${month}`, { credentials: 'include' }),
-        fetch(`/api/holidays?year=${year}&month=${month}`, { credentials: 'include' }),
-        fetch(`/api/constraints?year=${year}&month=${month}`, { credentials: 'include' }),
       ]);
 
-      const scheduleJson = await scheduleRes.json().catch(() => ({ entries: [] }));
-      const attendanceJson = await attendanceRes.json().catch(() => ({ records: [], currentStatus: 'absent' }));
+      const empJson = await empRes.json().catch(() => ({ employees: [] }));
+      const schedJson = await schedRes.json().catch(() => ({ schedule: [], entries: [] }));
       const dutyJson = await dutyRes.json().catch(() => ({ assignments: [] }));
-      const holidayJson = await holidayRes.json().catch(() => ({ holidays: [] }));
-      const constraintsJson = await constraintsRes.json().catch(() => ({ constraint: null }));
 
-      setScheduleEntries(scheduleJson.entries ?? []);
-      setAttendanceData(attendanceJson);
-      setDutyAssignments(dutyJson.assignments ?? []);
-      setHolidays(holidayJson.holidays ?? []);
-      setConstraintRecord(constraintsJson.constraint ?? null);
-    } catch {
-      setError('שגיאה בטעינת הנתונים');
+      setEmployees(empJson.employees ?? []);
+
+      if (schedJson.schedule) {
+        const flat: ShiftEntry[] = [];
+        for (const row of schedJson.schedule) flat.push(...(row.entries ?? []));
+        setSchedule(flat);
+      } else {
+        setSchedule(schedJson.entries ?? []);
+      }
+
+      setDuties(dutyJson.assignments ?? []);
     } finally {
       setLoading(false);
     }
-  }, [month, router, year]);
+  }, [year, month, router]);
 
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
-
-  const scheduleDays = useMemo(() => {
-    const holidayMap = new Map((holidays ?? []).map((h: any) => [h.date, h.name_he]));
-    const base = (scheduleEntries ?? []).map((entry: any) => ({
-      date: new Date(entry.date),
-      status: entry.schedule_type === 'weekend_duty' ? 'weekend_duty' : entry.schedule_type,
-      label: entry.schedule_type === 'holiday' ? holidayMap.get(entry.date) ?? 'חג' : undefined,
-    }));
-    return base;
-  }, [holidays, scheduleEntries]);
-
-  const dutyDays = useMemo(
-    () =>
-      (dutyAssignments ?? []).map((item: any) => ({
-        date: new Date(item.date),
-        employeeName: item.full_name,
-        note: item.notes,
-      })),
-    [dutyAssignments]
-  );
-
-  const existingConstraints = useMemo(() => {
-    const unavailable = constraintRecord?.unavailable_dates ? JSON.parse(constraintRecord.unavailable_dates) : [];
-    return (unavailable as string[]).map((date) => ({
-      date,
-      preference: 'day_off' as const,
-      reason: constraintRecord?.notes ?? '',
-    }));
-  }, [constraintRecord]);
-
-  const stats = useMemo(() => {
-    const officeDays = scheduleEntries.filter((e: any) => e.schedule_type === 'office').length;
-    const homeDays = scheduleEntries.filter((e: any) => e.schedule_type === 'home').length;
-    const dutyCount = dutyAssignments.length;
-    const hours = Number(attendanceData?.summary?.totalHours ?? attendanceData?.records?.reduce?.((sum: number, r: any) => sum + Number(r.hours_worked ?? 0), 0) ?? 0);
-
-    return [
-      { id: 'office', title: 'ימי משרד החודש', value: officeDays, icon: Building2, gradient: 'from-blue-500 to-indigo-600' },
-      { id: 'home', title: 'ימי בית החודש', value: homeDays, icon: Home, gradient: 'from-emerald-500 to-teal-600' },
-      { id: 'duty', title: 'תורנויות', value: dutyCount, icon: Shield, gradient: 'from-rose-500 to-pink-600' },
-      { id: 'hours', title: 'שעות נוכחות', value: hours.toFixed(1), icon: TimerReset, gradient: 'from-amber-500 to-orange-600' },
-    ];
-  }, [attendanceData, dutyAssignments.length, scheduleEntries]);
+  useEffect(() => { void loadData(); }, [loadData]);
 
   async function handleLogout() {
     await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
     router.push('/login');
   }
 
-  async function handleAttendanceAction() {
-    const res = await fetch('/api/attendance', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    if (res.ok) await loadData();
-  }
+  // ── Stats ────────────────────────────────────────────────────────────────────
+  const totalShifts = useMemo(
+    () => schedule.filter((e) => e.schedule_type !== 'day_off').length,
+    [schedule]
+  );
+  const totalDuties = duties.length;
 
-  async function handleConstraintSubmit(entry: { date: string; preference: 'office' | 'home' | 'day_off' | 'no_preference'; reason?: string }) {
-    const unavailable = new Set<string>(constraintRecord?.unavailable_dates ? JSON.parse(constraintRecord.unavailable_dates) : []);
-    if (entry.preference === 'day_off') unavailable.add(entry.date);
+  // ── Today's shifts ───────────────────────────────────────────────────────────
+  const todayShifts = useMemo(() => {
+    const empMap = new Map(employees.map((e) => [e.id, e.full_name]));
+    const morning: string[] = [];
+    const afternoon: string[] = [];
+    const night: string[] = [];
 
-    const prefMap: Record<string, string> = {
-      home: 'prefer_home',
-      office: 'prefer_office',
-      day_off: constraintRecord?.preference ?? 'no_preference',
-      no_preference: 'no_preference',
-    };
+    for (const entry of schedule) {
+      if (entry.date !== todayIso) continue;
+      const name = empMap.get(entry.user_id) ?? 'עובד';
+      if (entry.schedule_type === 'office') morning.push(name);
+      else if (entry.schedule_type === 'home') afternoon.push(name);
+      else if (entry.schedule_type === 'night') night.push(name);
+    }
+    return { morning, afternoon, night };
+  }, [schedule, employees, todayIso]);
 
-    const res = await fetch('/api/constraints', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        year,
-        month,
-        preference: prefMap[entry.preference],
-        unavailableDates: Array.from(unavailable),
-        notes: entry.reason ?? constraintRecord?.notes ?? null,
-      }),
-    });
-    if (!res.ok) throw new Error('failed');
-    await loadData();
-  }
-
-  async function handleConstraintDelete(date: string) {
-    const unavailable = new Set<string>(constraintRecord?.unavailable_dates ? JSON.parse(constraintRecord.unavailable_dates) : []);
-    unavailable.delete(date);
-    await fetch('/api/constraints', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        year,
-        month,
-        preference: constraintRecord?.preference ?? 'no_preference',
-        unavailableDates: Array.from(unavailable),
-        notes: constraintRecord?.notes ?? null,
-      }),
-    });
-    await loadData();
-  }
+  // ── Upcoming duties (next 7 days) ─────────────────────────────────────────
+  const upcomingDuties = useMemo(() => {
+    const cutoff = new Date(now.getTime() + 7 * 86400000);
+    return duties
+      .filter((d) => {
+        const dd = new Date(d.date + 'T00:00:00');
+        return dd >= now && dd <= cutoff;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+  }, [duties, now]);
 
   if (loading) {
-    return <div className="app-shell flex items-center justify-center text-slate-300">טוען דשבורד...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--muted)' }} />
+      </div>
+    );
   }
-
   if (!user) return null;
 
+  const isAdmin = user.role !== 'employee';
+
   return (
-    <div className="min-h-screen md:flex bg-transparent">
+    <div className="min-h-screen md:flex" dir="rtl">
       <Sidebar
         user={{ name: user.full_name, email: user.email, role: user.role }}
-        isAdmin={user.role !== 'employee'}
-        items={[
-          { href: '/dashboard', label: 'דשבורד', icon: CalendarDays },
-          ...(user.role !== 'employee' ? [{ href: '/admin', label: 'ניהול', icon: Shield }] : []),
-        ]}
+        isAdmin={isAdmin}
         onLogout={handleLogout}
       />
 
-      <main className="app-shell flex-1 mobile-safe-bottom">
+      <main className="flex-1 app-shell mobile-safe-bottom">
         <div className="page-grid">
-          <div className="flex items-start justify-between gap-4">
+
+          {/* Header */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="section-title">שלום {user.full_name.split(' ')[0]}</h1>
-              <p className="section-subtitle">לוח עבודה אישי, נוכחות, אילוצים ותורנויות</p>
+              <h1 className="section-title">שלום, {user.full_name.split(' ')[0]} 👋</h1>
+              <p className="section-subtitle">
+                {now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
             </div>
             <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
-              <LogOut className="h-4 w-4" /> התנתקות
+              <LogOut className="w-4 h-4" /> יציאה
             </button>
+          </motion.div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard icon={Users}        label="עובדים פעילים" value={employees.length} accent="#3b82f6" delay={0.05} />
+            <StatCard icon={CalendarRange} label="משמרות החודש"  value={totalShifts}      accent="#f59e0b" delay={0.10} />
+            <StatCard icon={ShieldCheck}  label="תורנויות"      value={totalDuties}      accent="#ef4444" delay={0.15} />
+            <StatCard icon={CalendarDays} label="ימים בחודש"    value={new Date(year, month, 0).getDate()} accent="#a855f7" delay={0.20} />
           </div>
 
-          {error && <div className="data-card p-4 text-rose-300">{error}</div>}
-
-          <StatsCards stats={stats} cols={4} />
-
-          <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-            <div className="data-card p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-white">לוח החודש</h2>
-                  <p className="text-sm text-slate-400">2 ימים מהבית, 3 מהמשרד — עם חגים ותורנויות</p>
-                </div>
+          {/* Today + Upcoming */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Today's shifts */}
+            <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="data-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-white">כוח אדם היום</h2>
+                <span className="badge-soft">{todayIso}</span>
               </div>
-              <ScheduleCalendar schedule={scheduleDays as any} />
-            </div>
-
-            <div className="grid gap-4">
-              <AttendancePanel
-                status={attendanceData?.currentStatus ?? 'absent'}
-                lastCheckIn={attendanceData?.todayRecord?.check_in}
-                lastCheckOut={attendanceData?.todayRecord?.check_out}
-                history={(attendanceData?.records ?? []).slice(0, 8).map((r: any) => ({
-                  id: String(r.id),
-                  date: r.date,
-                  checkIn: r.check_in,
-                  checkOut: r.check_out,
-                  durationMinutes: Math.round(Number(r.hours_worked ?? 0) * 60),
-                }))}
-                onCheckIn={handleAttendanceAction}
-                onCheckOut={handleAttendanceAction}
-              />
-
-              <div className="data-card p-4">
-                <div className="mb-3">
-                  <h2 className="text-lg font-semibold text-white">תורנויות</h2>
-                  <p className="text-sm text-slate-400">תורנות חודשית לסופ"ש מלא</p>
-                </div>
-                <DutyCalendar dutyDays={dutyDays} currentUserName={user.full_name} />
+              <div className="flex flex-col gap-3">
+                <TodayShiftGroup icon={Sunrise} label="בוקר 07:00–15:00" color="#f59e0b" employees={todayShifts.morning} />
+                <TodayShiftGroup icon={Sun}     label="אחהצ 13:00–21:00" color="#3b82f6" employees={todayShifts.afternoon} />
+                <TodayShiftGroup icon={Moon}    label="לילה 21:00–07:00" color="#a855f7" employees={todayShifts.night} />
+                {!todayShifts.morning.length && !todayShifts.afternoon.length && !todayShifts.night.length && (
+                  <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>אין משמרות מוגדרות להיום</p>
+                )}
               </div>
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-            <ConstraintForm
-              existingConstraints={existingConstraints}
-              onSubmit={handleConstraintSubmit}
-              onDelete={handleConstraintDelete}
-            />
-
-            <div className="data-card p-4">
-              <div className="mb-3">
-                <h2 className="text-lg font-semibold text-white">חגים החודש</h2>
-                <p className="text-sm text-slate-400">ימים שמסומנים אוטומטית בלוח</p>
+            {/* Upcoming duties */}
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }} className="data-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-white">תורנויות קרובות</h2>
+                <Link href="/duty" className="text-xs text-blue-400 hover:underline">הצג הכל</Link>
               </div>
-              <div className="grid gap-2">
-                {holidays.length === 0 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">אין חגים בחודש הזה.</div>
+              <div className="flex flex-col gap-2">
+                {upcomingDuties.length === 0 ? (
+                  <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>אין תורנויות ב-7 הימים הקרובים</p>
                 ) : (
-                  holidays.map((holiday: any) => (
-                    <div key={`${holiday.date}-${holiday.name_en}`} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="font-medium text-white">{holiday.name_he}</div>
-                          <div className="text-sm text-slate-400">{holiday.name_en}</div>
-                        </div>
-                        <span className="badge-soft">{holiday.date}</span>
+                  upcomingDuties.map((d) => (
+                    <div key={d.id} className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                      <ShieldCheck className="w-4 h-4 shrink-0 text-red-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{d.full_name ?? 'עובד'}</p>
+                        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                          {new Date(d.date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </p>
                       </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                        {d.duty_type === 'weekend' ? 'סופ״ש' : 'כוננות'}
+                      </span>
                     </div>
                   ))
                 )}
               </div>
-            </div>
+            </motion.div>
           </div>
+
+          {/* Quick actions */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap gap-3">
+            <Link href="/schedule" className="btn-primary">
+              <CalendarRange className="w-4 h-4" />
+              לוח משמרות
+            </Link>
+            <Link href="/duty" className="btn-secondary">
+              <ShieldCheck className="w-4 h-4" />
+              תורנויות
+            </Link>
+            {isAdmin && (
+              <Link href="/admin" className="btn-secondary">
+                <Users className="w-4 h-4" />
+                ניהול עובדים
+              </Link>
+            )}
+          </motion.div>
+
         </div>
       </main>
-
-      <div className="md:hidden">
-        <MobileNav isAdmin={user.role !== 'employee'} items={[
-          { href: '/dashboard', label: 'בית', icon: CalendarDays },
-          ...(user.role !== 'employee' ? [{ href: '/admin', label: 'ניהול', icon: Shield }] : []),
-        ]} />
-      </div>
     </div>
   );
 }
