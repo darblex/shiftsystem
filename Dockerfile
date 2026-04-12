@@ -34,8 +34,8 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Create data directory for SQLite (Railway will mount a volume here)
-RUN mkdir -p /data && chown nextjs:nodejs /data
+# Create data directory for SQLite
+RUN mkdir -p /data /app/data && chown -R nextjs:nodejs /data /app/data
 
 USER nextjs
 
