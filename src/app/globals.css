@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-bg: #0b1220;
+  --app-bg-soft: #111a2e;
+  --app-card: rgba(255,255,255,0.06);
+  --app-card-strong: rgba(255,255,255,0.1);
+  --app-fg: #e5eefb;
+  --app-muted: #94a3b8;
+  --app-border: rgba(255,255,255,0.1);
+  --primary: #2563eb;
+  --secondary: #6366f1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  color: var(--app-fg);
+  background:
+    radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(99,102,241,0.15), transparent 28%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 45%, #0b1220 100%);
+}
+
+.bg-app {
+  background-color: var(--app-bg);
+}
+
+.text-app-fg {
+  color: var(--app-fg);
+}
+
+.text-app-muted {
+  color: var(--app-muted);
+}
+
+.glass-card {
+  background: var(--app-card);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.glass-card-strong {
+  background: var(--app-card-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
+}
+
+.app-shell {
+  @apply min-h-screen px-4 py-4 md:px-6 md:py-6;
+}
+
+.page-grid {
+  @apply mx-auto max-w-7xl grid gap-4 md:gap-6;
+}
+
+.section-title {
+  @apply text-xl md:text-2xl font-bold tracking-tight text-white;
+}
+
+.section-subtitle {
+  @apply text-sm text-slate-400;
+}
+
+.data-card {
+  @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl shadow-black/20;
+}
+
+.input-dark,
+.select-dark,
+.textarea-dark {
+  @apply w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-400/40 focus:ring-2 focus:ring-blue-500/20;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-blue-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:from-blue-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.badge-soft {
+  @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.38);
+}
+
+@media (max-width: 768px) {
+  .mobile-safe-bottom {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}
