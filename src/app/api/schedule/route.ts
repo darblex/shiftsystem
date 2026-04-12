@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/schedule/route.ts — Monthly schedule CRUD
 // ============================================================

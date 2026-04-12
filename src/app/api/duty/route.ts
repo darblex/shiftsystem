@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/duty/route.ts — Weekend/on-call duty assignments
 // ============================================================

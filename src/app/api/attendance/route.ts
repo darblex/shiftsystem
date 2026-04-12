@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/attendance/route.ts — Attendance tracking
 // ============================================================

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/auth/route.ts — Login / logout / me / change-password
 // ============================================================

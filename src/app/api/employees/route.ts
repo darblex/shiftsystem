@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/employees/route.ts — User/employee CRUD
 // ============================================================

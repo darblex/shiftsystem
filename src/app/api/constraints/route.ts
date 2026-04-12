@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // ============================================================
 // app/api/constraints/route.ts — Monthly scheduling constraints
 // ============================================================

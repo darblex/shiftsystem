@@ -32,28 +32,36 @@ declare global {
   var __db: Database.Database | undefined;
 }
 
-let db: Database.Database;
-
-if (process.env.NODE_ENV === 'production') {
-  db = new Database(DB_PATH);
-} else {
-  if (!global.__db) {
-    global.__db = new Database(DB_PATH);
+function getDb(): Database.Database {
+  // During Next.js static build (phase export), skip DB init to avoid lock conflicts
+  if (process.env.NEXT_PHASE === 'phase-export' || process.env.NEXT_PHASE === 'phase-production-build') {
+    // Return a mock db during build that won't be used
+    return {} as Database.Database;
   }
-  db = global.__db;
+
+  if (process.env.NODE_ENV === 'production') {
+    if (!global.__db) {
+      global.__db = new Database(DB_PATH);
+      initDb(global.__db);
+    }
+    return global.__db;
+  } else {
+    if (!global.__db) {
+      global.__db = new Database(DB_PATH);
+      initDb(global.__db);
+    }
+    return global.__db;
+  }
 }
 
-export { db };
+function initDb(database: Database.Database) {
+  database.pragma('journal_mode = WAL');
+  database.pragma('synchronous = NORMAL');
+  database.pragma('foreign_keys = ON');
 
-// ── Pragma optimisations ────────────────────────────────────────────────────
+  // ── Schema ─────────────────────────────────────────────────────────────────
 
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-db.pragma('foreign_keys = ON');
-
-// ── Schema ───────────────────────────────────────────────────────────────────
-
-db.exec(`
+  database.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     username       TEXT    NOT NULL UNIQUE,
@@ -134,7 +142,7 @@ db.exec(`
 
 // ── Seed helpers ─────────────────────────────────────────────────────────────
 
-function seedUsers(): void {
+function seedUsers(db: Database.Database): void {
   const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
   if (count > 0) return;
 
@@ -187,7 +195,7 @@ function seedUsers(): void {
   seedMany(employees);
 }
 
-function seedHolidays(): void {
+function seedHolidays(db: Database.Database): void {
   const count = (db.prepare('SELECT COUNT(*) as c FROM holidays').get() as { c: number }).c;
   if (count > 0) return;
 
@@ -205,9 +213,17 @@ function seedHolidays(): void {
   insertAll(ISRAELI_HOLIDAYS);
 }
 
-// Run seeds once
-seedUsers();
-seedHolidays();
+  // Run seeds once
+  seedUsers(database);
+  seedHolidays(database);
+}
+
+// Export db as lazy singleton
+export const db: Database.Database = new Proxy({} as Database.Database, {
+  get(_target, prop) {
+    return (getDb() as any)[prop];
+  }
+});
 
 // ── User helpers ─────────────────────────────────────────────────────────────
 
