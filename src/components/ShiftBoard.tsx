@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle } from 'lucide-react';
-import ShiftEditModal, { SHIFT_ABBREV, SHIFT_CLASS, type ShiftType } from './ShiftEditModal';
+import ShiftEditModal from './ShiftEditModal';
 import CopyMonthModal from './CopyMonthModal';
+import type { ShiftType } from '@/types';
+import { SHIFT_ABBREV, SHIFT_CLASS, SHIFT_LABEL } from './shiftMeta';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,7 +20,7 @@ interface ShiftEntry {
   id: number;
   user_id: number;
   date: string;
-  schedule_type: string;
+  shift_type: ShiftType;
   notes?: string;
 }
 
@@ -35,8 +37,6 @@ interface EmployeeRow {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
-const WEEKDAY_FULL = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();
 }
@@ -76,7 +76,7 @@ function ShiftCell({
   canEdit: boolean;
   onClick: () => void;
 }) {
-  const type = (entry?.schedule_type ?? 'day_off') as ShiftType;
+  const type = entry?.shift_type ?? 'day_off';
   const abbrev = SHIFT_ABBREV[type] ?? '—';
   const cls = SHIFT_CLASS[type] ?? 'shift-off';
 
@@ -203,7 +203,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
       body: JSON.stringify({
         userId: editTarget.employee.id,
         date: editTarget.date,
-        scheduleType: shiftType,
+        shiftType,
         notes: notes || null,
       }),
     });
@@ -234,7 +234,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
         body: JSON.stringify({
           userId: copyTarget.userId,
           date: newDate,
-          scheduleType: entry.schedule_type,
+          shiftType: entry.shift_type,
           notes: entry.notes ?? null,
         }),
       });
@@ -276,15 +276,15 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
 
         {/* Legend */}
         <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { label: 'בוקר', cls: 'shift-office', abbrev: 'ב' },
-            { label: 'אחהצ', cls: 'shift-home',   abbrev: 'צ' },
-            { label: 'לילה', cls: 'shift-night',  abbrev: 'ל' },
-            { label: 'תורנות', cls: 'shift-duty', abbrev: 'ת' },
-          ].map((l) => (
-            <span key={l.label} className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
-              <span className={`shift-badge ${l.cls}`}>{l.abbrev}</span>
-              {l.label}
+          {([
+            'morning',
+            'afternoon',
+            'night',
+            'duty',
+          ] as const).map((shiftType) => (
+            <span key={shiftType} className="flex items-center gap-1 text-xs" style={{ color: 'var(--muted)' }}>
+              <span className={`shift-badge ${SHIFT_CLASS[shiftType]}`}>{SHIFT_ABBREV[shiftType]}</span>
+              {SHIFT_LABEL[shiftType]}
             </span>
           ))}
         </div>
@@ -390,7 +390,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
                     const dateStr = padDate(year, month, d);
                     const isHoliday = holidaySet.has(dateStr);
                     const entry = row.shifts[dateStr];
-                    const canEdit = isAdmin || row.employee.id === currentUser.id;
+                    const canEdit = isAdmin;
                     return (
                       <td
                         key={d}
@@ -419,7 +419,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
 
                   {/* Copy button */}
                   <td className="px-3 text-center" style={{ borderRight: '1px solid var(--border)' }}>
-                    {(isAdmin || row.employee.id === currentUser.id) && (
+                    {isAdmin && (
                       <button
                         onClick={() => setCopyTarget({ userId: row.employee.id, name: row.employee.full_name })}
                         className="p-1.5 rounded-lg transition-colors"
@@ -451,7 +451,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
           open={!!editTarget}
           employeeName={editTarget.employee.full_name}
           date={editTarget.date}
-          currentShift={(editTarget.entry?.schedule_type as ShiftType) ?? 'day_off'}
+          currentShift={editTarget.entry?.shift_type ?? 'day_off'}
           onSave={handleSaveShift}
           onClose={() => setEditTarget(null)}
         />

@@ -20,16 +20,21 @@ export const GET = requireAuth(async (req, { user }) => {
   const month = searchParams.get('month') ? Number(searchParams.get('month')) : null;
   const userIdParam = searchParams.get('userId');
 
-  if (!year || !month) {
-    return NextResponse.json({ error: 'נא לציין שנה וחודש' }, { status: 400 });
+  if (!year || !month || month < 1 || month > 12) {
+    return NextResponse.json({ error: 'נא לציין שנה וחודש תקינים' }, { status: 400 });
   }
 
   let targetUserId: number | undefined;
   if (userIdParam) {
     targetUserId = Number(userIdParam);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+      return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+    }
     if (user.role === 'employee' && user.id !== targetUserId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות בשיבוצים של עובד אחר' }, { status: 403 });
     }
+  } else if (user.role === 'employee') {
+    targetUserId = user.id;
   }
 
   const shifts = targetUserId !== undefined
@@ -80,7 +85,7 @@ export const POST = requireAuth(async (req, { user }) => {
   });
 
   return NextResponse.json({ shift }, { status: 201 });
-});
+}, ['admin', 'manager']);
 
 // DELETE /api/shifts?userId=X&date=YYYY-MM-DD
 export const DELETE = requireAuth(async (req, { user }) => {
@@ -93,10 +98,13 @@ export const DELETE = requireAuth(async (req, { user }) => {
   }
 
   const targetUserId = Number(userIdParam);
-  if (user.role === 'employee' && user.id !== targetUserId) {
-    return NextResponse.json({ error: 'אין הרשאה למחוק משמרת של עובד אחר' }, { status: 403 });
+  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+    return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    return NextResponse.json({ error: 'פורמט תאריך לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
   }
 
   deleteShift(targetUserId, date);
   return NextResponse.json({ success: true });
-});
+}, ['admin', 'manager']);

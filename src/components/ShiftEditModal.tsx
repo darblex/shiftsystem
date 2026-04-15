@@ -2,13 +2,11 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { ShiftType } from '@/types';
+import { SHIFT_ABBREV, SHIFT_CLASS, SHIFT_EDIT_ORDER, SHIFT_LABEL, SHIFT_TIME_RANGE } from './shiftMeta';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export type ShiftType =
-  | 'office' | 'home' | 'night' | 'duty' | 'weekend_duty'
-  | 'holiday' | 'sick' | 'vacation' | 'day_off';
 
 interface ShiftOption {
   value: ShiftType;
@@ -17,17 +15,12 @@ interface ShiftOption {
   colorClass: string;
 }
 
-const SHIFT_OPTIONS: ShiftOption[] = [
-  { value: 'office',       label: 'בוקר (משרד)',    timeRange: '07:00–15:00', colorClass: 'shift-office' },
-  { value: 'home',         label: 'אחהצ (בית)',     timeRange: '13:00–21:00', colorClass: 'shift-home' },
-  { value: 'night',        label: 'לילה',           timeRange: '21:00–07:00', colorClass: 'shift-night' },
-  { value: 'duty',         label: 'תורנות',         timeRange: '24 שעות',     colorClass: 'shift-duty' },
-  { value: 'weekend_duty', label: 'תורנות סופ״ש',   timeRange: 'סופ״ש',       colorClass: 'shift-weekend_duty' },
-  { value: 'holiday',      label: 'חג',             timeRange: 'כל היום',     colorClass: 'shift-holiday' },
-  { value: 'sick',         label: 'מחלה',           timeRange: '—',           colorClass: 'shift-sick' },
-  { value: 'vacation',     label: 'חופשה',          timeRange: '—',           colorClass: 'shift-vacation' },
-  { value: 'day_off',      label: 'יום חופש',       timeRange: '—',           colorClass: 'shift-off' },
-];
+const SHIFT_OPTIONS: ShiftOption[] = SHIFT_EDIT_ORDER.map((value) => ({
+  value,
+  label: SHIFT_LABEL[value],
+  timeRange: SHIFT_TIME_RANGE[value] ?? '—',
+  colorClass: SHIFT_CLASS[value],
+}));
 
 export interface ShiftEditModalProps {
   open: boolean;
@@ -48,6 +41,12 @@ export default function ShiftEditModal({ open, employeeName, date, currentShift,
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    setSelected(currentShift ?? 'day_off');
+    setNotes('');
+  }, [open, currentShift]);
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -58,16 +57,8 @@ export default function ShiftEditModal({ open, employeeName, date, currentShift,
     }
   }
 
-  // Reset state when re-opened
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      setSelected(currentShift ?? 'day_off');
-      setNotes('');
-    }
-  };
-
   return (
-    <AnimatePresence onExitComplete={() => handleOpenChange(false)}>
+    <AnimatePresence>
       {open && (
         <>
           {/* Backdrop */}
@@ -163,27 +154,4 @@ export default function ShiftEditModal({ open, employeeName, date, currentShift,
   );
 }
 
-// Abbreviated labels for badges
-export const SHIFT_ABBREV: Record<ShiftType, string> = {
-  office:       'ב',
-  home:         'צ',
-  night:        'ל',
-  duty:         'ת',
-  weekend_duty: 'ת׳ס',
-  holiday:      'ח',
-  sick:         'מ',
-  vacation:     'ח׳',
-  day_off:      '—',
-};
-
-export const SHIFT_CLASS: Record<ShiftType, string> = {
-  office:       'shift-office',
-  home:         'shift-home',
-  night:        'shift-night',
-  duty:         'shift-duty',
-  weekend_duty: 'shift-weekend_duty',
-  holiday:      'shift-holiday',
-  sick:         'shift-sick',
-  vacation:     'shift-vacation',
-  day_off:      'shift-off',
-};
+export { SHIFT_ABBREV, SHIFT_CLASS } from './shiftMeta';

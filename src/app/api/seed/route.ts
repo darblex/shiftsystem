@@ -8,6 +8,9 @@ import { requireAuth } from '@/lib/auth';
 import { db, getAllActiveUsers, bulkUpsertShifts, upsertDutyAssignment } from '@/lib/db';
 import type { ShiftEntry } from '@/types';
 
+const SEED_ENDPOINT_ENABLED =
+  process.env.NODE_ENV !== 'production' || process.env.ENABLE_SEED_ENDPOINT === 'true';
+
 function datesInMonth(year: number, month: number): string[] {
   const dates: string[] = [];
   const d = new Date(year, month - 1, 1);
@@ -32,7 +35,11 @@ const APRIL_2026_HOLIDAYS = new Set([
 
 const SHIFT_TYPES: Array<'morning' | 'afternoon' | 'night'> = ['morning', 'afternoon', 'night'];
 
-export async function GET() {
+export const GET = requireAuth(async () => {
+  if (!SEED_ENDPOINT_ENABLED) {
+    return NextResponse.json({ error: 'נקודת seed אינה זמינה' }, { status: 404 });
+  }
+
   const counts = {
     users: (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c,
     shifts: (db.prepare('SELECT COUNT(*) as c FROM shifts').get() as any).c,
@@ -44,17 +51,15 @@ export async function GET() {
   return NextResponse.json({
     seeded: counts.users > 0,
     counts,
-    demoUsers: [
-      { username: 'admin', password: 'admin' },
-      { username: 'yossi', password: 'employee1' },
-      { username: 'michal', password: 'employee2' },
-      { username: 'avi', password: 'manager1' },
-      { username: 'dana', password: 'employee3' },
-    ],
+    seedEndpointEnabled: true,
   });
-}
+}, ['admin']);
 
 export const POST = requireAuth(async (_req, { user }) => {
+  if (!SEED_ENDPOINT_ENABLED) {
+    return NextResponse.json({ error: 'נקודת seed אינה זמינה' }, { status: 404 });
+  }
+
   if (user.role !== 'admin') {
     return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
   }

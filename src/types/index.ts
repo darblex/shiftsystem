@@ -78,6 +78,20 @@ export interface ConstraintRecord {
   created_at?: string;
 }
 
+export interface ShiftRequest {
+  id: number;
+  requester_id: number;
+  requester_name?: string;
+  target_date: string;
+  current_shift: ShiftType;
+  requested_shift: ShiftType;
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  admin_note?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GenerateMonthOptions {
   year: number;
   month: number;

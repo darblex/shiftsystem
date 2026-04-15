@@ -12,11 +12,15 @@ import {
   extractTokenFromRequest,
   buildAuthCookieValue,
   buildClearCookieValue,
+  getAuthConfigurationErrorResponse,
 } from '@/lib/auth';
 import { getUserById, getUserByUsername } from '@/lib/db';
 
 // GET /api/auth — return current session user
 export async function GET(req: NextRequest) {
+  const configError = getAuthConfigurationErrorResponse();
+  if (configError) return configError;
+
   const token = extractTokenFromRequest(req);
   if (!token) {
     return NextResponse.json({ error: 'לא מחובר' }, { status: 401 });
@@ -37,6 +41,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/auth — login with username + password
 export async function POST(req: NextRequest) {
+  const configError = getAuthConfigurationErrorResponse();
+  if (configError) return configError;
+
   let body: any;
   try {
     body = await req.json();
@@ -81,6 +88,9 @@ export async function DELETE(_req: NextRequest) {
 
 // PATCH /api/auth — change own password
 export async function PATCH(req: NextRequest) {
+  const configError = getAuthConfigurationErrorResponse();
+  if (configError) return configError;
+
   const token = extractTokenFromRequest(req);
   if (!token) return NextResponse.json({ error: 'לא מחובר' }, { status: 401 });
 

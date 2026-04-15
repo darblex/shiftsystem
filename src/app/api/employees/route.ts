@@ -161,7 +161,14 @@ export const PATCH = requireAuth(async (req, { user }) => {
   }
 
   // Handle password separately
-  if (password !== undefined && (isAdmin || isSelf)) {
+  if (password !== undefined) {
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'עדכון סיסמה עצמית מתבצע דרך /api/auth עם אימות סיסמה נוכחית' },
+        { status: 403 }
+      );
+    }
+
     if (String(password).length < 6) {
       return NextResponse.json(
         { error: 'הסיסמה חייבת להכיל לפחות 6 תווים' },

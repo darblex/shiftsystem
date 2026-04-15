@@ -9,7 +9,7 @@ import { db, copyShiftsToMonth } from '@/lib/db';
 
 // POST /api/shifts/copy — body: {userId, fromYear, fromMonth, toYear, toMonth}
 export const POST = requireAuth(
-  async (req, { user }) => {
+  async (req) => {
     let body: any;
     try {
       body = await req.json();
@@ -27,10 +27,25 @@ export const POST = requireAuth(
     }
 
     const targetUserId = Number(userId);
+    const fromYearNum = Number(fromYear);
+    const fromMonthNum = Number(fromMonth);
+    const toYearNum = Number(toYear);
+    const toMonthNum = Number(toMonth);
 
-    // Allow employee to copy own shifts; admin/manager can copy any
-    if (user.role === 'employee' && user.id !== targetUserId) {
-      return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+      return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+    }
+    if (
+      !Number.isInteger(fromYearNum) ||
+      !Number.isInteger(toYearNum) ||
+      !Number.isInteger(fromMonthNum) ||
+      !Number.isInteger(toMonthNum) ||
+      fromMonthNum < 1 ||
+      fromMonthNum > 12 ||
+      toMonthNum < 1 ||
+      toMonthNum > 12
+    ) {
+      return NextResponse.json({ error: 'שנה או חודש לא תקינים' }, { status: 400 });
     }
 
     const targetUser = db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').get(targetUserId);
@@ -38,10 +53,10 @@ export const POST = requireAuth(
 
     const count = copyShiftsToMonth(
       targetUserId,
-      Number(fromYear),
-      Number(fromMonth),
-      Number(toYear),
-      Number(toMonth)
+      fromYearNum,
+      fromMonthNum,
+      toYearNum,
+      toMonthNum
     );
 
     return NextResponse.json({
@@ -50,5 +65,6 @@ export const POST = requireAuth(
       from: `${fromYear}-${String(fromMonth).padStart(2, '0')}`,
       to: `${toYear}-${String(toMonth).padStart(2, '0')}`,
     });
-  }
+  },
+  ['admin', 'manager']
 );

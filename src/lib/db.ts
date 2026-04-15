@@ -6,7 +6,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
-import { ISRAELI_HOLIDAYS } from './holidays';
+import { ISRAELI_HOLIDAYS, getHolidaysForMonth } from './holidays';
 import type {
   User,
   UserWithHash,
@@ -14,6 +14,7 @@ import type {
   ConstraintRecord,
   Holiday,
   DutyAssignment,
+  ShiftRequest,
 } from '@/types';
 
 // ── Database path ────────────────────────────────────────────────────────────
@@ -23,6 +24,8 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 const DB_PATH = path.join(DATA_DIR, 'shiftsystem.db');
+const DEMO_SEED_ENABLED =
+  process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_SEED === 'true';
 
 // ── Singleton (works with Next.js hot reload in dev) ─────────────────────────
 
@@ -90,6 +93,8 @@ function initDb(database: Database.Database) {
     UNIQUE(user_id, year, month)
   );
 
+  CREATE INDEX IF NOT EXISTS idx_constraints_user ON constraints(user_id);
+
   CREATE TABLE IF NOT EXISTS holidays (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     date     TEXT    NOT NULL,
@@ -110,13 +115,38 @@ function initDb(database: Database.Database) {
     notes       TEXT,
     UNIQUE(employee_id, date)
   );
+
+  CREATE INDEX IF NOT EXISTS idx_duty_date ON duty_assignments(date);
+
+  CREATE TABLE IF NOT EXISTS shift_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_date TEXT NOT NULL,
+    current_shift TEXT NOT NULL,
+    requested_shift TEXT NOT NULL,
+    reason TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','cancelled')),
+    admin_note TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_requester ON shift_requests(requester_id);
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_date ON shift_requests(target_date);
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_status ON shift_requests(status);
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_requester_target_status
+    ON shift_requests(requester_id, target_date, status);
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_status_target_date
+    ON shift_requests(status, target_date);
+  CREATE INDEX IF NOT EXISTS idx_shift_requests_requester_created_at
+    ON shift_requests(requester_id, created_at DESC);
 `);
 
   // ── Seed helpers ─────────────────────────────────────────────────────────────
 
   function seedUsers(db: Database.Database): void {
     const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
-    if (count > 0) return;
+    if (count > 0 || !DEMO_SEED_ENABLED) return;
 
     const insert = db.prepare(`
       INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash)
@@ -349,10 +379,7 @@ export function copyShiftsToMonth(
   if (sourceShifts.length === 0) return 0;
 
   // Get holiday dates in target month (to skip)
-  const holidayRows = db
-    .prepare(`SELECT date FROM holidays WHERE date LIKE ?`)
-    .all(`${toPrefix}%`) as { date: string }[];
-  const holidaySet = new Set(holidayRows.map((h) => h.date));
+  const holidaySet = new Set(getHolidaysForMonth(toYear, toMonth).map((holiday) => holiday.date));
 
   // Map day-of-month from source to target
   const insert = db.prepare(`
@@ -444,6 +471,152 @@ export function upsertDutyAssignment(data: {
        RETURNING *`
     )
     .get(data) as DutyAssignment;
+}
+
+// ── Shift request helpers ─────────────────────────────────────────────────────
+
+export function getShiftForUserOnDate(userId: number, date: string): ShiftEntry | undefined {
+  return db
+    .prepare(`SELECT * FROM shifts WHERE user_id = ? AND date = ? LIMIT 1`)
+    .get(userId, date) as ShiftEntry | undefined;
+}
+
+export function getShiftRequestById(id: number): ShiftRequest | undefined {
+  return db
+    .prepare(
+      `SELECT sr.*, u.full_name AS requester_name
+       FROM shift_requests sr
+       JOIN users u ON u.id = sr.requester_id
+       WHERE sr.id = ?`
+    )
+    .get(id) as ShiftRequest | undefined;
+}
+
+export function findPendingShiftRequest(requesterId: number, targetDate: string): ShiftRequest | undefined {
+  return db
+    .prepare(
+      `SELECT sr.*, u.full_name AS requester_name
+       FROM shift_requests sr
+       JOIN users u ON u.id = sr.requester_id
+       WHERE sr.requester_id = ? AND sr.target_date = ? AND sr.status = 'pending'
+       LIMIT 1`
+    )
+    .get(requesterId, targetDate) as ShiftRequest | undefined;
+}
+
+export function listShiftRequests(options: {
+  requesterId?: number;
+  status?: ShiftRequest['status'];
+  fromDate?: string;
+  toDate?: string;
+  limit?: number;
+} = {}): ShiftRequest[] {
+  const { requesterId, status, fromDate, toDate } = options;
+  const safeLimit = Math.min(Math.max(options.limit ?? 100, 1), 500);
+
+  let query = `
+    SELECT sr.*, u.full_name AS requester_name
+    FROM shift_requests sr
+    JOIN users u ON u.id = sr.requester_id
+  `;
+  const clauses: string[] = [];
+  const params: Array<number | string> = [];
+
+  if (requesterId !== undefined) {
+    clauses.push('sr.requester_id = ?');
+    params.push(requesterId);
+  }
+  if (status) {
+    clauses.push('sr.status = ?');
+    params.push(status);
+  }
+  if (fromDate) {
+    clauses.push('sr.target_date >= ?');
+    params.push(fromDate);
+  }
+  if (toDate) {
+    clauses.push('sr.target_date <= ?');
+    params.push(toDate);
+  }
+
+  if (clauses.length > 0) {
+    query += ` WHERE ${clauses.join(' AND ')}`;
+  }
+
+  query += ' ORDER BY sr.created_at DESC LIMIT ?';
+  params.push(safeLimit);
+
+  return db.prepare(query).all(...params) as ShiftRequest[];
+}
+
+export function createShiftRequest(data: {
+  requester_id: number;
+  target_date: string;
+  current_shift: ShiftEntry['shift_type'];
+  requested_shift: ShiftEntry['shift_type'];
+  reason?: string | null;
+}): ShiftRequest {
+  const result = db
+    .prepare(
+      `INSERT INTO shift_requests (requester_id, target_date, current_shift, requested_shift, reason)
+       VALUES (@requester_id, @target_date, @current_shift, @requested_shift, @reason)`
+    )
+    .run(data);
+
+  return getShiftRequestById(Number(result.lastInsertRowid)) as ShiftRequest;
+}
+
+export function resolveShiftRequest(
+  id: number,
+  status: Extract<ShiftRequest['status'], 'approved' | 'rejected' | 'cancelled'>,
+  actorId?: number,
+  adminNote?: string | null,
+):
+  | { ok: true; request: ShiftRequest }
+  | { ok: false; code: 'not_found' | 'not_pending' | 'missing_shift' | 'shift_changed'; currentShift?: ShiftEntry['shift_type'] } {
+  const run = db.transaction((requestId: number) => {
+    const request = db
+      .prepare(`SELECT * FROM shift_requests WHERE id = ?`)
+      .get(requestId) as ShiftRequest | undefined;
+
+    if (!request) {
+      return { ok: false, code: 'not_found' } as const;
+    }
+
+    if (request.status !== 'pending') {
+      return { ok: false, code: 'not_pending' } as const;
+    }
+
+    if (status === 'approved') {
+      const currentShift = getShiftForUserOnDate(request.requester_id, request.target_date);
+      if (!currentShift) {
+        return { ok: false, code: 'missing_shift' } as const;
+      }
+      if (currentShift.shift_type !== request.current_shift) {
+        return {
+          ok: false,
+          code: 'shift_changed',
+          currentShift: currentShift.shift_type,
+        } as const;
+      }
+
+      db.prepare(
+        `UPDATE shifts
+         SET shift_type = ?, approved_by = ?
+         WHERE user_id = ? AND date = ?`
+      ).run(request.requested_shift, actorId ?? null, request.requester_id, request.target_date);
+    }
+
+    db.prepare(
+      `UPDATE shift_requests
+       SET status = ?, admin_note = ?, updated_at = datetime('now')
+       WHERE id = ?`
+    ).run(status, adminNote ?? null, requestId);
+
+    return { ok: true, request: getShiftRequestById(requestId) as ShiftRequest } as const;
+  });
+
+  return run(id);
 }
 
 // ── Holiday helpers (from DB) ─────────────────────────────────────────────────

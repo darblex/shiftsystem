@@ -14,10 +14,10 @@ interface Employee {
 
 interface DutyAssignment {
   id: number;
-  user_id: number;
+  employee_id: number;
   date: string;
-  duty_type: 'weekend' | 'oncall';
-  full_name?: string;
+  duty_type: 'regular' | 'weekend' | 'holiday';
+  employee_name?: string;
   notes?: string;
 }
 
@@ -45,13 +45,13 @@ interface AddDutyModalProps {
   open: boolean;
   date: string;
   employees: Employee[];
-  onSave: (userId: number, dutyType: 'weekend' | 'oncall', notes: string) => Promise<void>;
+  onSave: (userId: number, dutyType: 'weekend' | 'regular', notes: string) => Promise<void>;
   onClose: () => void;
 }
 
 function AddDutyModal({ open, date, employees, onSave, onClose }: AddDutyModalProps) {
   const [userId, setUserId] = useState('');
-  const [dutyType, setDutyType] = useState<'weekend' | 'oncall'>('weekend');
+  const [dutyType, setDutyType] = useState<'weekend' | 'regular'>('weekend');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -107,7 +107,7 @@ function AddDutyModal({ open, date, employees, onSave, onClose }: AddDutyModalPr
                 <div>
                   <label className="block text-sm font-medium text-white mb-1.5">סוג תורנות</label>
                   <div className="flex gap-2">
-                    {(['weekend', 'oncall'] as const).map((t) => (
+                    {(['weekend', 'regular'] as const).map((t) => (
                       <label
                         key={t}
                         className="flex-1 flex items-center justify-center gap-2 p-2 rounded-xl cursor-pointer text-sm transition-all"
@@ -203,7 +203,7 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
   for (let i = 0; i < firstDow; i++) calCells.push({ day: null, date: null });
   for (let d = 1; d <= daysInMonth; d++) calCells.push({ day: d, date: padDate(year, month, d) });
 
-  async function handleAddDuty(userId: number, dutyType: 'weekend' | 'oncall', notes: string) {
+  async function handleAddDuty(userId: number, dutyType: 'weekend' | 'regular', notes: string) {
     if (!addTarget) return;
     await fetch('/api/duty', {
       method: 'POST',
@@ -270,7 +270,7 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.008 }}
-                  className="rounded-xl p-1.5 cursor-pointer transition-all hover:scale-105"
+                  className="group rounded-xl p-1.5 cursor-pointer transition-all hover:scale-105"
                   style={{
                     background: isToday
                       ? 'rgba(59,130,246,0.15)'
@@ -300,13 +300,30 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
                         key={duty.id}
                         className="flex items-center gap-1 rounded-md px-1.5 py-0.5"
                         style={{
-                          background: duty.duty_type === 'weekend' ? 'rgba(239,68,68,0.15)' : 'rgba(249,115,22,0.15)',
-                          border: `1px solid ${duty.duty_type === 'weekend' ? 'rgba(239,68,68,0.3)' : 'rgba(249,115,22,0.3)'}`,
+                          background: duty.duty_type === 'weekend'
+                            ? 'rgba(239,68,68,0.15)'
+                            : duty.duty_type === 'holiday'
+                            ? 'rgba(34,197,94,0.15)'
+                            : 'rgba(249,115,22,0.15)',
+                          border: `1px solid ${duty.duty_type === 'weekend'
+                            ? 'rgba(239,68,68,0.3)'
+                            : duty.duty_type === 'holiday'
+                            ? 'rgba(34,197,94,0.3)'
+                            : 'rgba(249,115,22,0.3)'}`,
                         }}
                       >
-                        <ShieldCheck className="w-2.5 h-2.5 shrink-0" style={{ color: duty.duty_type === 'weekend' ? '#f87171' : '#fb923c' }} />
+                        <ShieldCheck
+                          className="w-2.5 h-2.5 shrink-0"
+                          style={{
+                            color: duty.duty_type === 'weekend'
+                              ? '#f87171'
+                              : duty.duty_type === 'holiday'
+                              ? '#4ade80'
+                              : '#fb923c',
+                          }}
+                        />
                         <span className="text-[9px] font-medium text-white truncate">
-                          {duty.full_name?.split(' ')[0] ?? 'עובד'}
+                          {duty.employee_name?.split(' ')[0] ?? 'עובד'}
                         </span>
                       </div>
                     ))}

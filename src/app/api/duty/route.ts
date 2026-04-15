@@ -20,9 +20,14 @@ export const GET = requireAuth(async (req, { user }) => {
   let targetEmployeeId: number | null = null;
   if (userIdParam) {
     targetEmployeeId = Number(userIdParam);
+    if (!Number.isInteger(targetEmployeeId) || targetEmployeeId <= 0) {
+      return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+    }
     if (user.role === 'employee' && user.id !== targetEmployeeId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות בתורנויות של עובד אחר' }, { status: 403 });
     }
+  } else if (user.role === 'employee') {
+    targetEmployeeId = user.id;
   }
 
   let assignments: any[];

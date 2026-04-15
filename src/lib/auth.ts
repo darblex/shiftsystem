@@ -11,9 +11,29 @@ import type { User } from '@/types';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const JWT_SECRET = process.env.JWT_SECRET || 'shiftsystem-dev-secret-change-in-production';
+const DEFAULT_JWT_SECRET = 'shiftsystem-dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const COOKIE_NAME = 'ss_token';
+
+export function isJwtSecretConfigured(): boolean {
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
+
+  return Boolean(process.env.JWT_SECRET && process.env.JWT_SECRET !== DEFAULT_JWT_SECRET);
+}
+
+export function getAuthConfigurationErrorResponse(): NextResponse | null {
+  if (isJwtSecretConfigured()) {
+    return null;
+  }
+
+  return NextResponse.json(
+    { error: 'השרת אינו מוגדר כראוי לאימות' },
+    { status: 500 }
+  );
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,6 +86,10 @@ export function signToken(user: Pick<User, 'id' | 'username' | 'role'>): string 
  * Verifies a JWT string and returns the decoded payload, or null if invalid.
  */
 export function verifyToken(token: string): JwtPayload | null {
+  if (!isJwtSecretConfigured()) {
+    return null;
+  }
+
   try {
     return jwt.verify(token, JWT_SECRET) as unknown as JwtPayload;
   } catch {
@@ -129,7 +153,9 @@ export function buildAuthCookieValue(token: string, maxAgeSeconds = 7 * 24 * 60 
  * Creates a Set-Cookie header that clears the auth token.
  */
 export function buildClearCookieValue(): string {
-  return `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`;
+  return `${COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${
+    process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  }`;
 }
 
 // ── Current-user lookup ───────────────────────────────────────────────────────
@@ -196,6 +222,11 @@ export function requireAuth(
   allowedRoles?: Array<User['role']>
 ): (req: NextRequest, ...rest: unknown[]) => Promise<NextResponse> {
   return async (req: NextRequest, ...rest: unknown[]) => {
+    const configError = getAuthConfigurationErrorResponse();
+    if (configError) {
+      return configError;
+    }
+
     const token = extractTokenFromRequest(req);
 
     if (!token) {

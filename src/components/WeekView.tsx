@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
-import { SHIFT_ABBREV, SHIFT_CLASS, type ShiftType } from './ShiftEditModal';
+import type { ShiftType } from '@/types';
+import { SHIFT_ABBREV, SHIFT_CLASS, SHIFT_LABEL, SHIFT_TIME_RANGE } from './shiftMeta';
 
 interface Employee {
   id: number;
@@ -14,16 +15,9 @@ interface Employee {
 interface ShiftEntry {
   user_id: number;
   date: string;
-  schedule_type: string;
+  shift_type: ShiftType;
   notes?: string;
 }
-
-const SHIFT_TIMES: Partial<Record<ShiftType, { start: string; end: string; label: string }>> = {
-  office: { start: '07:00', end: '15:00', label: 'בוקר' },
-  home:   { start: '13:00', end: '21:00', label: 'אחהצ' },
-  night:  { start: '21:00', end: '07:00', label: 'לילה' },
-  duty:   { start: '00:00', end: '23:59', label: 'תורנות' },
-};
 
 const HE_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
@@ -53,7 +47,7 @@ interface WeekViewProps {
   initialWeek?: number;
 }
 
-export default function WeekView({ currentUser, initialYear, initialWeek }: WeekViewProps) {
+export default function WeekView({ currentUser: _currentUser, initialYear, initialWeek }: WeekViewProps) {
   const now = new Date();
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [week, setWeek] = useState(initialWeek ?? getWeekOfYear(now));
@@ -63,33 +57,50 @@ export default function WeekView({ currentUser, initialYear, initialWeek }: Week
   const [error, setError] = useState('');
 
   const weekDates = useMemo(() => getWeekDates(year, week), [year, week]);
-  const month = weekDates[0].getMonth() + 1;
-  const weekMonth = weekDates[3].getMonth() + 1; // midpoint month
+  const visibleMonths = useMemo(
+    () => Array.from(
+      new Map(
+        weekDates.map((date) => {
+          const monthYear = `${date.getFullYear()}-${date.getMonth() + 1}`;
+          return [monthYear, { year: date.getFullYear(), month: date.getMonth() + 1 }];
+        })
+      ).values()
+    ),
+    [weekDates]
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [empRes, schedRes] = await Promise.all([
+      const [empRes, ...scheduleResponses] = await Promise.all([
         fetch('/api/employees', { credentials: 'include' }),
-        fetch(`/api/schedule?year=${year}&month=${weekMonth}`, { credentials: 'include' }),
+        ...visibleMonths.map(({ year: monthYear, month: monthNumber }) =>
+          fetch(`/api/schedule?year=${monthYear}&month=${monthNumber}`, { credentials: 'include' })
+        ),
       ]);
       const empJson = await empRes.json().catch(() => ({ employees: [] }));
-      const schedJson = await schedRes.json().catch(() => ({ schedule: [], entries: [] }));
+      const scheduleJsons = await Promise.all(
+        scheduleResponses.map((response) => response.json().catch(() => ({ schedule: [], entries: [] })))
+      );
+
       setEmployees(empJson.employees ?? []);
-      if (schedJson.schedule) {
-        const flat: ShiftEntry[] = [];
-        for (const row of schedJson.schedule) flat.push(...(row.entries ?? []));
-        setSchedule(flat);
-      } else {
-        setSchedule(schedJson.entries ?? []);
+
+      const flat: ShiftEntry[] = [];
+      for (const schedJson of scheduleJsons) {
+        if (schedJson.schedule) {
+          for (const row of schedJson.schedule) flat.push(...(row.entries ?? []));
+        } else {
+          flat.push(...(schedJson.entries ?? []));
+        }
       }
+      setSchedule(flat);
     } catch {
       setError('שגיאה בטעינת הנתונים');
     } finally {
       setLoading(false);
     }
-  }, [year, weekMonth]);
+  }, [visibleMonths]);
 
   useEffect(() => { void loadData(); }, [loadData]);
 
@@ -105,19 +116,27 @@ export default function WeekView({ currentUser, initialYear, initialWeek }: Week
   const weekLabel = `${weekDates[0].toLocaleDateString('he-IL', { day: 'numeric', month: 'long' })} – ${weekDates[6].toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   // Build matrix: for each day, list of (employee, shift)
+  const scheduleByUserAndDate = useMemo(() => {
+    const map = new Map<string, ShiftEntry>();
+    for (const entry of schedule) {
+      map.set(`${entry.user_id}:${entry.date}`, entry);
+    }
+    return map;
+  }, [schedule]);
+
   const weekMatrix = useMemo(() => {
     return weekDates.map((date) => {
       const iso = toIso(date);
       const dayEntries: Array<{ employee: Employee; entry: ShiftEntry }> = [];
       for (const emp of employees) {
-        const entry = schedule.find((s) => s.user_id === emp.id && s.date === iso);
-        if (entry && entry.schedule_type !== 'day_off') {
+        const entry = scheduleByUserAndDate.get(`${emp.id}:${iso}`);
+        if (entry && entry.shift_type !== 'day_off') {
           dayEntries.push({ employee: emp, entry });
         }
       }
       return { date, iso, entries: dayEntries };
     });
-  }, [weekDates, employees, schedule]);
+  }, [weekDates, employees, scheduleByUserAndDate]);
 
   return (
     <div dir="rtl">
@@ -191,9 +210,9 @@ export default function WeekView({ currentUser, initialYear, initialWeek }: Week
                     <p className="text-[10px] text-center py-2" style={{ color: 'var(--muted)' }}>—</p>
                   ) : (
                     entries.map(({ employee, entry }) => {
-                      const type = entry.schedule_type as ShiftType;
+                      const type = entry.shift_type;
                       const cls = SHIFT_CLASS[type] ?? 'shift-off';
-                      const timeInfo = SHIFT_TIMES[type];
+                      const timeRange = SHIFT_TIME_RANGE[type];
                       return (
                         <div
                           key={employee.id}
@@ -201,8 +220,9 @@ export default function WeekView({ currentUser, initialYear, initialWeek }: Week
                           style={{ border: 'none' }}
                         >
                           <p className="text-[10px] font-semibold truncate leading-tight">{employee.full_name.split(' ')[0]}</p>
-                          {timeInfo && (
-                            <p className="text-[9px] opacity-75">{timeInfo.start}–{timeInfo.end}</p>
+                          <p className="text-[9px] opacity-75">{SHIFT_ABBREV[type]} · {SHIFT_LABEL[type]}</p>
+                          {timeRange && (
+                            <p className="text-[9px] opacity-75">{timeRange}</p>
                           )}
                         </div>
                       );
