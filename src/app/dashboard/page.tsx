@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
+import type { DutyAssignment, ShiftEntry } from '@/types';
 
 interface CurrentUser {
   id: number;
@@ -26,25 +27,39 @@ interface CurrentUser {
   department?: string;
 }
 
-interface ShiftEntry {
-  user_id: number;
-  date: string;
-  schedule_type: string;
-  notes?: string;
-}
-
-interface DutyAssignment {
-  id: number;
-  user_id: number;
-  date: string;
-  duty_type: string;
-  full_name?: string;
-}
-
 interface Employee {
   id: number;
   full_name: string;
   department?: string;
+}
+
+function nextMonthParts(year: number, month: number) {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}
+
+function normalizeScheduleResponse(payload: any): ShiftEntry[] {
+  if (!payload) return [];
+  if (Array.isArray(payload.entries)) return payload.entries as ShiftEntry[];
+  if (Array.isArray(payload.schedule)) {
+    return payload.schedule.flatMap((row: any) => row?.entries ?? []) as ShiftEntry[];
+  }
+  if (Array.isArray(payload.shifts)) return payload.shifts as ShiftEntry[];
+  return [];
+}
+
+function normalizeDutyResponse(payload: any): DutyAssignment[] {
+  if (!payload) return [];
+  if (Array.isArray(payload.assignments)) return payload.assignments as DutyAssignment[];
+  if (Array.isArray(payload.duties)) return payload.duties as DutyAssignment[];
+  return [];
+}
+
+function formatIsoDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseDutyDate(date: string) {
+  return new Date(`${date}T00:00:00`);
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -119,7 +134,8 @@ export default function DashboardPage() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
-  const todayIso = `${year}-${String(month).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayIso = formatIsoDate(now);
+  const { year: nextYear, month: nextMonthNumber } = nextMonthParts(year, month);
 
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -131,35 +147,39 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const authRes = await fetch('/api/auth', { credentials: 'include' });
-      if (!authRes.ok) { router.push('/login'); return; }
+      if (!authRes.ok) {
+        router.push('/login');
+        return;
+      }
+
       const authJson = await authRes.json();
       setUser(authJson.user);
 
-      const [empRes, schedRes, dutyRes] = await Promise.all([
+      const [empRes, schedRes, dutyRes, nextDutyRes] = await Promise.all([
         fetch('/api/employees', { credentials: 'include' }),
         fetch(`/api/schedule?year=${year}&month=${month}`, { credentials: 'include' }),
         fetch(`/api/duty?year=${year}&month=${month}`, { credentials: 'include' }),
+        fetch(`/api/duty?year=${nextYear}&month=${nextMonthNumber}`, { credentials: 'include' }),
       ]);
 
       const empJson = await empRes.json().catch(() => ({ employees: [] }));
-      const schedJson = await schedRes.json().catch(() => ({ schedule: [], entries: [] }));
-      const dutyJson = await dutyRes.json().catch(() => ({ assignments: [] }));
+      const schedJson = await schedRes.json().catch(() => ({}));
+      const dutyJson = await dutyRes.json().catch(() => ({}));
+      const nextDutyJson = await nextDutyRes.json().catch(() => ({}));
 
       setEmployees(empJson.employees ?? []);
-
-      if (schedJson.schedule) {
-        const flat: ShiftEntry[] = [];
-        for (const row of schedJson.schedule) flat.push(...(row.entries ?? []));
-        setSchedule(flat);
-      } else {
-        setSchedule(schedJson.entries ?? []);
-      }
-
-      setDuties(dutyJson.assignments ?? []);
+      setSchedule(normalizeScheduleResponse(schedJson));
+      setDuties([
+        ...normalizeDutyResponse(dutyJson),
+        ...normalizeDutyResponse(nextDutyJson),
+      ]);
+    } catch {
+      setSchedule([]);
+      setDuties([]);
     } finally {
       setLoading(false);
     }
-  }, [year, month, router]);
+  }, [year, month, nextYear, nextMonthNumber, router]);
 
   useEffect(() => { void loadData(); }, [loadData]);
 
@@ -170,7 +190,7 @@ export default function DashboardPage() {
 
   // ── Stats ────────────────────────────────────────────────────────────────────
   const totalShifts = useMemo(
-    () => schedule.filter((e) => e.schedule_type !== 'day_off').length,
+    () => schedule.filter((e) => e.shift_type !== 'day_off').length,
     [schedule]
   );
   const totalDuties = duties.length;
@@ -181,28 +201,31 @@ export default function DashboardPage() {
     const morning: string[] = [];
     const afternoon: string[] = [];
     const night: string[] = [];
+    const duty: string[] = [];
 
     for (const entry of schedule) {
       if (entry.date !== todayIso) continue;
       const name = empMap.get(entry.user_id) ?? 'עובד';
-      if (entry.schedule_type === 'office') morning.push(name);
-      else if (entry.schedule_type === 'home') afternoon.push(name);
-      else if (entry.schedule_type === 'night') night.push(name);
+      if (entry.shift_type === 'morning') morning.push(name);
+      else if (entry.shift_type === 'afternoon') afternoon.push(name);
+      else if (entry.shift_type === 'night') night.push(name);
+      else if (entry.shift_type === 'duty' || entry.shift_type === 'weekend_duty') duty.push(name);
     }
-    return { morning, afternoon, night };
+    return { morning, afternoon, night, duty };
   }, [schedule, employees, todayIso]);
 
   // ── Upcoming duties (next 7 days) ─────────────────────────────────────────
   const upcomingDuties = useMemo(() => {
-    const cutoff = new Date(now.getTime() + 7 * 86400000);
+    const start = parseDutyDate(todayIso);
+    const cutoff = new Date(start.getTime() + 7 * 86400000);
     return duties
       .filter((d) => {
-        const dd = new Date(d.date + 'T00:00:00');
-        return dd >= now && dd <= cutoff;
+        const dd = parseDutyDate(d.date);
+        return dd >= start && dd <= cutoff;
       })
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 5);
-  }, [duties, now]);
+  }, [duties, todayIso]);
 
   if (loading) {
     return (
@@ -259,7 +282,8 @@ export default function DashboardPage() {
                 <TodayShiftGroup icon={Sunrise} label="בוקר 07:00–15:00" color="#f59e0b" employees={todayShifts.morning} />
                 <TodayShiftGroup icon={Sun}     label="אחהצ 13:00–21:00" color="#3b82f6" employees={todayShifts.afternoon} />
                 <TodayShiftGroup icon={Moon}    label="לילה 21:00–07:00" color="#a855f7" employees={todayShifts.night} />
-                {!todayShifts.morning.length && !todayShifts.afternoon.length && !todayShifts.night.length && (
+                <TodayShiftGroup icon={ShieldCheck} label="תורנויות" color="#ef4444" employees={todayShifts.duty} />
+                {!todayShifts.morning.length && !todayShifts.afternoon.length && !todayShifts.night.length && !todayShifts.duty.length && (
                   <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>אין משמרות מוגדרות להיום</p>
                 )}
               </div>
@@ -280,7 +304,7 @@ export default function DashboardPage() {
                       style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
                       <ShieldCheck className="w-4 h-4 shrink-0 text-red-400" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{d.full_name ?? 'עובד'}</p>
+                        <p className="text-sm font-medium text-white truncate">{d.employee_name ?? 'עובד'}</p>
                         <p className="text-xs" style={{ color: 'var(--muted)' }}>
                           {new Date(d.date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </p>

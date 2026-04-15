@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db, getConstraints, upsertConstraints, getUserById } from '@/lib/db';
+import { normalizeText, parseJsonObject, parseMonth, parsePositiveInt, parseYear } from '@/lib/validation';
 import type { ConstraintPreference } from '@/types';
 
 const VALID_PREFERENCES: ConstraintPreference[] = [
@@ -21,12 +22,15 @@ const VALID_PREFERENCES: ConstraintPreference[] = [
 export const GET = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
   const userIdParam = searchParams.get('userId');
-  const year = searchParams.get('year') ? Number(searchParams.get('year')) : null;
-  const month = searchParams.get('month') ? Number(searchParams.get('month')) : null;
+  const year = parseYear(searchParams.get('year'));
+  const month = parseMonth(searchParams.get('month'));
 
   let targetUserId: number;
   if (userIdParam) {
-    targetUserId = Number(userIdParam);
+    targetUserId = parsePositiveInt(userIdParam) ?? 0;
+    if (!targetUserId) {
+      return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+    }
     if (user.role === 'employee' && user.id !== targetUserId) {
       return NextResponse.json({ error: 'אין הרשאה לצפות במגבלות של עובד אחר' }, { status: 403 });
     }
@@ -51,15 +55,29 @@ export const GET = requireAuth(async (req, { user }) => {
 
 // POST /api/constraints — create or update constraint for a user/month
 export const POST = requireAuth(async (req, { user }) => {
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { userId: userIdParam, year, month, preference, notes } = body ?? {};
-  const targetUserId = userIdParam ? Number(userIdParam) : user.id;
+  const payload = parseJsonObject(body);
+  if (!payload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
+
+  const targetUserId = payload.userId ? parsePositiveInt(payload.userId) ?? 0 : user.id;
+  if (!targetUserId) {
+    return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
+  }
+  const year = parseYear(payload.year);
+  const month = parseMonth(payload.month);
+  const preferenceRaw = normalizeText(payload.preference, 40);
+  const preference: ConstraintPreference | null = preferenceRaw && VALID_PREFERENCES.includes(preferenceRaw as ConstraintPreference)
+    ? (preferenceRaw as ConstraintPreference)
+    : null;
+  const notes = normalizeText(payload.notes, 500);
 
   if (user.role === 'employee' && user.id !== targetUserId) {
     return NextResponse.json({ error: 'אין הרשאה להגדיר מגבלות לעובד אחר' }, { status: 403 });
@@ -68,10 +86,7 @@ export const POST = requireAuth(async (req, { user }) => {
   if (!year || !month) {
     return NextResponse.json({ error: 'נא לציין שנה וחודש' }, { status: 400 });
   }
-  if (month < 1 || month > 12) {
-    return NextResponse.json({ error: 'חודש לא תקין' }, { status: 400 });
-  }
-  if (preference && !VALID_PREFERENCES.includes(preference)) {
+  if (preferenceRaw && !preference) {
     return NextResponse.json(
       { error: `העדפה לא תקינה. אפשרויות: ${VALID_PREFERENCES.join(', ')}` },
       { status: 400 }
@@ -86,7 +101,7 @@ export const POST = requireAuth(async (req, { user }) => {
     year,
     month,
     preference: preference ?? 'no_preference',
-    notes: notes ?? null,
+    notes: notes ?? undefined,
   });
 
   return NextResponse.json({ constraint }, { status: 201 });
@@ -101,24 +116,27 @@ export const DELETE = requireAuth(async (req, { user }) => {
   const month = searchParams.get('month');
 
   if (id) {
-    const existing = db.prepare('SELECT * FROM constraints WHERE id = ?').get(Number(id)) as any;
+    const targetConstraintId = parsePositiveInt(id);
+    if (!targetConstraintId) return NextResponse.json({ error: 'מזהה מגבלה לא תקין' }, { status: 400 });
+    const existing = db.prepare('SELECT * FROM constraints WHERE id = ?').get(targetConstraintId) as any;
     if (!existing) return NextResponse.json({ error: 'מגבלה לא נמצאה' }, { status: 404 });
 
     if (user.role === 'employee' && user.id !== existing.user_id) {
       return NextResponse.json({ error: 'אין הרשאה למחוק מגבלה זו' }, { status: 403 });
     }
 
-    db.prepare('DELETE FROM constraints WHERE id = ?').run(Number(id));
+    db.prepare('DELETE FROM constraints WHERE id = ?').run(targetConstraintId);
     return NextResponse.json({ success: true, message: 'המגבלה נמחקה' });
   }
 
   if (userId && year && month) {
-    const targetId = Number(userId);
+    const targetId = parsePositiveInt(userId);
+    if (!targetId) return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
     if (user.role === 'employee' && user.id !== targetId) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
     db.prepare('DELETE FROM constraints WHERE user_id = ? AND year = ? AND month = ?').run(
-      targetId, Number(year), Number(month)
+      targetId, parsePositiveInt(year) ?? Number(year), parsePositiveInt(month) ?? Number(month)
     );
     return NextResponse.json({ success: true, message: 'המגבלות נמחקו' });
   }

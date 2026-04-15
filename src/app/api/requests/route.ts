@@ -12,6 +12,7 @@ import {
   getUserById,
   listShiftRequests,
 } from '@/lib/db';
+import { normalizeText, parseJsonObject, parsePositiveInt, parseIsoDate } from '@/lib/validation';
 import type { ShiftRequest, ShiftType } from '@/types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -87,17 +88,25 @@ export const GET = requireAuth(async (req, { user }) => {
 
 // POST /api/requests — create a new shift change request
 export const POST = requireAuth(async (req, { user }) => {
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { userId: userIdParam, targetDate, currentShift, requestedShift, reason } = body ?? {};
+  const payload = parseJsonObject(body);
+  if (!payload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
 
-  const requesterId = userIdParam ? Number(userIdParam) : user.id;
-  if (!Number.isInteger(requesterId) || requesterId < 1) {
+  const requesterId = payload.userId ? parsePositiveInt(payload.userId) : user.id;
+  const targetDate = parseIsoDate(payload.targetDate);
+  const currentShift = normalizeText(payload.currentShift, 20) as ShiftType | null;
+  const requestedShift = normalizeText(payload.requestedShift, 20) as ShiftType | null;
+  const reason = normalizeText(payload.reason, 500);
+
+  if (!requesterId) {
     return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
   }
 
@@ -112,13 +121,10 @@ export const POST = requireAuth(async (req, { user }) => {
     );
   }
 
-  if (!DATE_RE.test(String(targetDate))) {
-    return NextResponse.json({ error: 'פורמט תאריך לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
-  }
-  if (!VALID_SHIFT_TYPES.includes(currentShift)) {
+  if (!VALID_SHIFT_TYPES.includes(currentShift as ShiftType)) {
     return NextResponse.json({ error: 'המשמרת הנוכחית לא תקינה' }, { status: 400 });
   }
-  if (!VALID_SHIFT_TYPES.includes(requestedShift)) {
+  if (!VALID_SHIFT_TYPES.includes(requestedShift as ShiftType)) {
     return NextResponse.json({ error: 'המשמרת המבוקשת לא תקינה' }, { status: 400 });
   }
   if (currentShift === requestedShift) {
@@ -130,7 +136,7 @@ export const POST = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'עובד לא נמצא' }, { status: 404 });
   }
 
-  const existingShift = getShiftForUserOnDate(requesterId, String(targetDate));
+  const existingShift = getShiftForUserOnDate(requesterId, targetDate);
   if (!existingShift) {
     return NextResponse.json({ error: 'לא נמצאה משמרת בתאריך המבוקש' }, { status: 404 });
   }
@@ -144,7 +150,7 @@ export const POST = requireAuth(async (req, { user }) => {
     );
   }
 
-  const pendingRequest = findPendingShiftRequest(requesterId, String(targetDate));
+  const pendingRequest = findPendingShiftRequest(requesterId, targetDate);
   if (pendingRequest) {
     return NextResponse.json(
       { error: 'כבר קיימת בקשה פתוחה לתאריך זה', request: pendingRequest },
@@ -154,10 +160,10 @@ export const POST = requireAuth(async (req, { user }) => {
 
   const requestRecord = createShiftRequest({
     requester_id: requesterId,
-    target_date: String(targetDate),
+    target_date: targetDate,
     current_shift: currentShift,
     requested_shift: requestedShift,
-    reason: reason ? String(reason).trim() : null,
+    reason,
   });
 
   return NextResponse.json({ request: requestRecord }, { status: 201 });

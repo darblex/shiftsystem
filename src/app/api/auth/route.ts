@@ -15,6 +15,7 @@ import {
   getAuthConfigurationErrorResponse,
 } from '@/lib/auth';
 import { getUserById, getUserByUsername } from '@/lib/db';
+import { normalizeText, parseJsonObject } from '@/lib/validation';
 
 // GET /api/auth — return current session user
 export async function GET(req: NextRequest) {
@@ -44,20 +45,26 @@ export async function POST(req: NextRequest) {
   const configError = getAuthConfigurationErrorResponse();
   if (configError) return configError;
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { username, password } = body ?? {};
+  const payload = parseJsonObject(body);
+  if (!payload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
+
+  const username = normalizeText(payload.username, 100);
+  const password = normalizeText(payload.password, 200);
 
   if (!username || !password) {
     return NextResponse.json({ error: 'נא למלא שם משתמש וסיסמה' }, { status: 400 });
   }
 
-  const userWithHash = getUserByUsername(String(username).trim());
+  const userWithHash = getUserByUsername(username);
   if (!userWithHash) {
     return NextResponse.json({ error: 'שם משתמש או סיסמה שגויים' }, { status: 401 });
   }
@@ -94,24 +101,30 @@ export async function PATCH(req: NextRequest) {
   const token = extractTokenFromRequest(req);
   if (!token) return NextResponse.json({ error: 'לא מחובר' }, { status: 401 });
 
-  const payload = verifyToken(token);
-  if (!payload) return NextResponse.json({ error: 'פג תוקף ההתחברות' }, { status: 401 });
+  const tokenPayload = verifyToken(token);
+  if (!tokenPayload) return NextResponse.json({ error: 'פג תוקף ההתחברות' }, { status: 401 });
 
-  const user = getUserById(payload.sub);
+  const user = getUserById(tokenPayload.sub);
   if (!user || !user.active) return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 401 });
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { currentPassword, newPassword } = body ?? {};
+  const bodyPayload = parseJsonObject(body);
+  if (!bodyPayload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
+
+  const currentPassword = normalizeText(bodyPayload.currentPassword, 200);
+  const newPassword = normalizeText(bodyPayload.newPassword, 200);
   if (!currentPassword || !newPassword) {
     return NextResponse.json({ error: 'נא למלא סיסמה נוכחית וסיסמה חדשה' }, { status: 400 });
   }
-  if (String(newPassword).length < 6) {
+  if (newPassword.length < 6) {
     return NextResponse.json({ error: 'הסיסמה החדשה חייבת להכיל לפחות 6 תווים' }, { status: 400 });
   }
 

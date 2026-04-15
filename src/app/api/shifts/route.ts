@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db, getShiftsForMonth, getAllShiftsForMonth, upsertShift, deleteShift } from '@/lib/db';
+import { normalizeText, parseIsoDate, parseJsonObject, parsePositiveInt, parseMonth, parseYear } from '@/lib/validation';
 import type { ShiftType } from '@/types';
 
 const VALID_SHIFT_TYPES: ShiftType[] = [
@@ -16,18 +17,18 @@ const VALID_SHIFT_TYPES: ShiftType[] = [
 // GET /api/shifts?year=2026&month=4[&userId=X]
 export const GET = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
-  const year = searchParams.get('year') ? Number(searchParams.get('year')) : null;
-  const month = searchParams.get('month') ? Number(searchParams.get('month')) : null;
+  const year = parseYear(searchParams.get('year'));
+  const month = parseMonth(searchParams.get('month'));
   const userIdParam = searchParams.get('userId');
 
-  if (!year || !month || month < 1 || month > 12) {
+  if (!year || !month) {
     return NextResponse.json({ error: 'נא לציין שנה וחודש תקינים' }, { status: 400 });
   }
 
   let targetUserId: number | undefined;
   if (userIdParam) {
-    targetUserId = Number(userIdParam);
-    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+    targetUserId = parsePositiveInt(userIdParam) ?? 0;
+    if (!targetUserId) {
       return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
     }
     if (user.role === 'employee' && user.id !== targetUserId) {
@@ -46,15 +47,22 @@ export const GET = requireAuth(async (req, { user }) => {
 
 // POST /api/shifts — upsert single shift
 export const POST = requireAuth(async (req, { user }) => {
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { userId, date, shiftType, notes } = body ?? {};
-  const targetUserId = userId ? Number(userId) : user.id;
+  const payload = parseJsonObject(body);
+  if (!payload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
+
+  const targetUserId = parsePositiveInt(payload.userId) ?? user.id;
+  const date = parseIsoDate(payload.date);
+  const shiftType = normalizeText(payload.shiftType, 20) as ShiftType | null;
+  const notes = normalizeText(payload.notes, 500);
 
   if (user.role === 'employee' && user.id !== targetUserId) {
     return NextResponse.json({ error: 'אין הרשאה לשבץ משמרת לעובד אחר' }, { status: 403 });
@@ -63,10 +71,7 @@ export const POST = requireAuth(async (req, { user }) => {
   if (!date || !shiftType) {
     return NextResponse.json({ error: 'נא לציין תאריך וסוג משמרת' }, { status: 400 });
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
-    return NextResponse.json({ error: 'פורמט תאריך לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
-  }
-  if (!VALID_SHIFT_TYPES.includes(shiftType)) {
+  if (!VALID_SHIFT_TYPES.includes(shiftType as ShiftType)) {
     return NextResponse.json(
       { error: `סוג משמרת לא תקין. אפשרויות: ${VALID_SHIFT_TYPES.join(', ')}` },
       { status: 400 }
@@ -78,9 +83,9 @@ export const POST = requireAuth(async (req, { user }) => {
 
   const shift = upsertShift({
     user_id: targetUserId,
-    date: String(date),
-    shift_type: shiftType,
-    notes: notes ?? null,
+    date,
+    shift_type: shiftType as ShiftType,
+    notes: notes ?? undefined,
     approved_by: (user.role === 'admin' || user.role === 'manager') ? user.id : undefined,
   });
 
@@ -97,14 +102,15 @@ export const DELETE = requireAuth(async (req, { user }) => {
     return NextResponse.json({ error: 'נא לציין userId ותאריך' }, { status: 400 });
   }
 
-  const targetUserId = Number(userIdParam);
-  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+  const targetUserId = parsePositiveInt(userIdParam);
+  if (!targetUserId) {
     return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+  const parsedDate = parseIsoDate(date);
+  if (!parsedDate) {
     return NextResponse.json({ error: 'פורמט תאריך לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
   }
 
-  deleteShift(targetUserId, date);
+  deleteShift(targetUserId, parsedDate);
   return NextResponse.json({ success: true });
 }, ['admin', 'manager']);

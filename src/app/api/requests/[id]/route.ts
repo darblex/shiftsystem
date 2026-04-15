@@ -6,29 +6,35 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getShiftRequestById, resolveShiftRequest } from '@/lib/db';
+import { normalizeText, parseJsonObject, parsePositiveInt } from '@/lib/validation';
 import type { ShiftRequest } from '@/types';
 
-const MUTABLE_STATUSES: Array<Extract<ShiftRequest['status'], 'approved' | 'rejected' | 'cancelled'>> = [
-  'approved',
-  'rejected',
-  'cancelled',
-];
+type MutableStatus = Extract<ShiftRequest['status'], 'approved' | 'rejected' | 'cancelled'>;
+
+const MUTABLE_STATUSES: MutableStatus[] = ['approved', 'rejected', 'cancelled'];
 
 export const PUT = requireAuth(async (req, { user }, context: { params: { id: string } }) => {
-  const requestId = Number(context.params.id);
-  if (!Number.isInteger(requestId) || requestId < 1) {
+  const requestId = parsePositiveInt(context.params.id);
+  if (!requestId) {
     return NextResponse.json({ error: 'מזהה בקשה לא תקין' }, { status: 400 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   }
 
-  const { status, adminNote } = body ?? {};
-  if (!MUTABLE_STATUSES.includes(status)) {
+  const payload = parseJsonObject(body);
+  if (!payload) {
+    return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+  }
+
+  const status = normalizeText(payload.status, 20);
+  const adminNote = normalizeText(payload.adminNote, 500);
+  const mutableStatus = status as MutableStatus | null;
+  if (!mutableStatus || !MUTABLE_STATUSES.includes(mutableStatus)) {
     return NextResponse.json({ error: 'סטטוס יעד לא תקין' }, { status: 400 });
   }
 
@@ -44,16 +50,16 @@ export const PUT = requireAuth(async (req, { user }, context: { params: { id: st
     if (!isOwner) {
       return NextResponse.json({ error: 'אין הרשאה לעדכן בקשה זו' }, { status: 403 });
     }
-    if (status !== 'cancelled') {
+    if (mutableStatus !== 'cancelled') {
       return NextResponse.json({ error: 'עובד יכול רק לבטל את הבקשה שלו' }, { status: 403 });
     }
   }
 
   const result = resolveShiftRequest(
     requestId,
-    status,
+    mutableStatus,
     isManager ? user.id : undefined,
-    adminNote ? String(adminNote).trim() : null,
+    adminNote,
   );
 
   if (!result.ok) {
