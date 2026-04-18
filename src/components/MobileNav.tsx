@@ -8,8 +8,11 @@ import {
   Users,
   LayoutDashboard,
   ShieldCheck,
+  Sun,
+  Moon,
   type LucideIcon,
 } from 'lucide-react';
+import { useTheme } from '@/lib/useTheme';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,6 +48,8 @@ export function MobileNav({
   className = '',
 }: MobileNavProps) {
   const pathname = usePathname();
+  const { theme, toggle } = useTheme();
+  const isDark = theme === 'dark';
   const navItems = (items ?? DEFAULT_NAV_ITEMS).filter(
     (item) => !item.adminOnly || isAdmin
   );
@@ -102,6 +107,16 @@ export function MobileNav({
             </Link>
           );
         })}
+
+        {/* Theme toggle in mobile nav */}
+        <button
+          onClick={toggle}
+          className="relative flex-1 flex flex-col items-center justify-center gap-0.5 text-zinc-500 hover:text-zinc-300 transition-colors duration-200 focus:outline-none"
+          aria-label={isDark ? 'תצוגה בהירה' : 'תצוגה כהה'}
+        >
+          {isDark ? <Sun className="w-5 h-5" strokeWidth={1.8} /> : <Moon className="w-5 h-5" strokeWidth={1.8} />}
+          <span className="text-[10px] font-medium leading-none">{isDark ? 'בהיר' : 'כהה'}</span>
+        </button>
       </div>
     </nav>
   );

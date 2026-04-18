@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { ThemeToggle } from './ThemeToggle';
+
 export interface SidebarItem {
   href: string;
   label: string;
@@ -162,6 +164,11 @@ export function Sidebar({ user, isAdmin = false, items, onLogout, className = ''
           <NavLink key={item.href} item={item} collapsed={collapsed} />
         ))}
       </nav>
+
+      {/* Theme Toggle */}
+      <div className="px-2 pb-2">
+        <ThemeToggle collapsed={collapsed} />
+      </div>
 
       {/* Footer */}
       <div className="p-2" style={{ borderTop: '1px solid var(--border)' }}>

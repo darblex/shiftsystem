@@ -11,6 +11,17 @@
   --fg: #e2e2f0;
   --muted: #8888a8;
 
+  /* Light theme overrides */
+  &.light {
+    --bg: #f4f5f9;
+    --bg-card: #ffffff;
+    --bg-elevated: #eef0f6;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --fg: #1a1a2e;
+    --muted: #6b7280;
+  }
+
   /* shift accent palette */
   --shift-office: #f59e0b;   /* amber */
   --shift-home: #3b82f6;     /* blue  */
@@ -32,6 +43,12 @@ body {
   background-image:
     radial-gradient(ellipse at 80% 0%, rgba(59,130,246,0.12) 0%, transparent 40%),
     radial-gradient(ellipse at 20% 100%, rgba(168,85,247,0.10) 0%, transparent 40%);
+}
+
+html.light body {
+  background-image:
+    radial-gradient(ellipse at 80% 0%, rgba(59,130,246,0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at 20% 100%, rgba(168,85,247,0.05) 0%, transparent 40%);
 }
 
 /* ── layout ─────────────────────────────────────────────── */

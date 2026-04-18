@@ -27,6 +27,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Prevent dark/light flash on load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('shiftsystem-theme');if(t==='light')document.documentElement.classList.add('light');})()`
+          }}
+        />
+      </head>
       <body className="font-sans antialiased min-h-screen" style={{ background: 'var(--bg)', color: 'var(--fg)' }}>
         {children}
       </body>
