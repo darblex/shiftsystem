@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle } from 'lucide-react';
 import ShiftEditModal from './ShiftEditModal';
@@ -69,27 +69,53 @@ function ShiftCell({
   isHoliday,
   canEdit,
   onClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragOver,
+  isDragging,
 }: {
   entry?: ShiftEntry;
   isWeekend: boolean;
   isHoliday: boolean;
   canEdit: boolean;
   onClick: () => void;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
+  onDragEnd?: () => void;
+  isDragOver?: boolean;
+  isDragging?: boolean;
 }) {
   const type = entry?.shift_type ?? 'day_off';
   const abbrev = SHIFT_ABBREV[type] ?? '—';
   const cls = SHIFT_CLASS[type] ?? 'shift-off';
+  const draggable = canEdit && !!entry && entry.shift_type !== 'day_off';
 
   return (
     <div
-      className={`flex items-center justify-center h-8 transition-all ${canEdit ? 'cursor-pointer hover:scale-110' : ''}`}
+      className={`flex items-center justify-center h-8 transition-all
+        ${canEdit ? 'cursor-pointer' : ''}
+        ${isDragOver ? 'scale-110 ring-2 ring-blue-400 ring-inset rounded' : ''}
+        ${isDragging ? 'opacity-40' : ''}
+      `}
       style={{
-        background: isWeekend ? 'rgba(168,85,247,0.05)' : isHoliday ? 'rgba(34,197,94,0.05)' : 'transparent',
+        background: isDragOver
+          ? 'rgba(59,130,246,0.18)'
+          : isWeekend ? 'rgba(168,85,247,0.05)'
+          : isHoliday ? 'rgba(34,197,94,0.05)'
+          : 'transparent',
       }}
+      draggable={draggable}
+      onDragStart={draggable ? (e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart?.(); } : undefined}
+      onDragOver={canEdit ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver?.(e); } : undefined}
+      onDrop={canEdit ? (e) => { e.preventDefault(); onDrop?.(); } : undefined}
+      onDragEnd={onDragEnd}
       onClick={canEdit ? onClick : undefined}
-      title={canEdit ? 'לחץ לעריכה' : undefined}
+      title={draggable ? 'גרור להחלפת משמרת' : canEdit ? 'לחץ לעריכה' : undefined}
     >
-      <span className={`shift-badge ${cls}`}>{abbrev}</span>
+      <span className={`shift-badge ${cls} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}>{abbrev}</span>
     </div>
   );
 }
@@ -116,6 +142,11 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
   const [copyTarget, setCopyTarget] = useState<{ userId: number; name: string } | null>(null);
 
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+
+  // ── Drag & drop state ─────────────────────────────────────────────────────
+  const dragSource = useRef<{ employee: Employee; date: string; entry: ShiftEntry } | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null); // "userId:date"
+  const [draggingKey, setDraggingKey] = useState<string | null>(null); // "userId:date"
 
   // ── Load data ──────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -207,6 +238,37 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
         notes: notes || null,
       }),
     });
+    await loadData();
+  }
+
+  // ── Drag & drop swap ────────────────────────────────────────────────────────
+  async function handleDropSwap(targetEmployee: Employee, targetDate: string, targetEntry?: ShiftEntry) {
+    const src = dragSource.current;
+    dragSource.current = null;
+    setDragOverKey(null);
+    setDraggingKey(null);
+    if (!src) return;
+    // Same cell — no-op
+    if (src.employee.id === targetEmployee.id && src.date === targetDate) return;
+
+    const srcType = src.entry.shift_type;
+    const tgtType = targetEntry?.shift_type ?? 'day_off';
+
+    // Swap both cells in parallel
+    await Promise.all([
+      fetch('/api/schedule', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: src.employee.id, date: src.date, shiftType: tgtType, notes: targetEntry?.notes ?? null }),
+      }),
+      fetch('/api/schedule', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: targetEmployee.id, date: targetDate, shiftType: srcType, notes: src.entry.notes ?? null }),
+      }),
+    ]);
     await loadData();
   }
 
@@ -391,6 +453,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
                     const isHoliday = holidaySet.has(dateStr);
                     const entry = row.shifts[dateStr];
                     const canEdit = isAdmin;
+                    const cellKey = `${row.employee.id}:${dateStr}`;
                     return (
                       <td
                         key={d}
@@ -408,6 +471,16 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
                           isWeekend={isWeekend}
                           isHoliday={isHoliday}
                           canEdit={canEdit}
+                          isDragOver={dragOverKey === cellKey}
+                          isDragging={draggingKey === cellKey}
+                          onDragStart={() => {
+                            if (!entry) return;
+                            dragSource.current = { employee: row.employee, date: dateStr, entry };
+                            setDraggingKey(cellKey);
+                          }}
+                          onDragOver={() => setDragOverKey(cellKey)}
+                          onDrop={() => handleDropSwap(row.employee, dateStr, entry)}
+                          onDragEnd={() => { dragSource.current = null; setDraggingKey(null); setDragOverKey(null); }}
                           onClick={() => {
                             if (!canEdit) return;
                             setEditTarget({ employee: row.employee, date: dateStr, entry });
