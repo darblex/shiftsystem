@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle, FileSpreadsheet, FileText } from 'lucide-react';
 import ShiftEditModal from './ShiftEditModal';
 import CopyMonthModal from './CopyMonthModal';
 import type { ShiftType } from '@/types';
@@ -214,6 +214,18 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
     });
   }, [visibleEmployees, schedule]);
 
+  // ── Export ─────────────────────────────────────────────────────────────────
+  function handleExportExcel() {
+    import('@/lib/exportSchedule').then(({ exportToExcel }) => {
+      exportToExcel(visibleEmployees, schedule, year, month);
+    });
+  }
+  function handleExportPDF() {
+    import('@/lib/exportSchedule').then(({ exportToPDF }) => {
+      exportToPDF(visibleEmployees, schedule, year, month);
+    });
+  }
+
   // ── Navigation ──────────────────────────────────────────────────────────────
   function goPrev() {
     const [y, m] = prevMonth(year, month);
@@ -334,6 +346,30 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
             <option value="">כל המחלקות</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
+        )}
+
+        {/* Export buttons */}
+        {isAdmin && (
+          <div className="flex items-center gap-1 mr-auto">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+              style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}
+              title="ייצוא ל-Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Excel
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}
+              title="ייצוא ל-PDF"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              PDF
+            </button>
+          </div>
         )}
 
         {/* Legend */}
