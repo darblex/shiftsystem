@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeftRight, X, Check, XCircle, Clock, Loader2, PlusCircle, ChevronDown, ChevronUp,
+  ArrowLeftRight, X, Check, XCircle, Clock, Loader2, PlusCircle, ChevronDown, ChevronUp, CalendarOff,
 } from 'lucide-react';
 import type { ShiftRequest, ShiftType } from '@/types';
 import { SHIFT_ABBREV, SHIFT_CLASS, SHIFT_LABEL } from './shiftMeta';
@@ -30,6 +30,66 @@ function formatDate(d: string) {
 }
 
 const SHIFT_TYPES: ShiftType[] = ['morning', 'afternoon', 'night', 'duty', 'weekend_duty', 'day_off', 'sick', 'vacation', 'holiday'];
+
+// ─── Day Off Request Form ─────────────────────────────────────────────────────
+
+function DayOffForm({ onCreated, onClose }: { onCreated: () => void; onClose: () => void }) {
+  const [targetDate, setTargetDate] = useState('');
+  const [currentShift, setCurrentShift] = useState<ShiftType>('morning');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!targetDate) { setError('חובה לבחור תאריך'); return; }
+    setSaving(true); setError('');
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetDate, currentShift, requestedShift: 'day_off', reason: reason || null }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(json.error ?? 'שגיאה ביצירת הבקשה'); return; }
+      onCreated();
+      onClose();
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} dir="rtl" className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-white mb-1.5">תאריך החופש</label>
+          <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="input-dark text-sm" required />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-white mb-1.5">משמרת מתוכננת (לשינוי)</label>
+          <select value={currentShift} onChange={e => setCurrentShift(e.target.value as ShiftType)} className="select-dark text-sm">
+            {SHIFT_TYPES.filter(t => t !== 'day_off').map(t => (
+              <option key={t} value={t}>{SHIFT_LABEL[t]}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-white mb-1.5">סיבה (אופציונלי)</label>
+        <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="למשל: אירוע משפחתי, טיפול רפואי..." rows={2}
+          className="textarea-dark resize-none text-sm" maxLength={500} />
+      </div>
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={saving} className="btn-primary flex-1 text-sm py-2">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarOff className="w-4 h-4" />}
+          שלח בקשת חופש
+        </button>
+        <button type="button" onClick={onClose} className="btn-secondary px-4 text-sm py-2">ביטול</button>
+      </div>
+    </form>
+  );
+}
 
 // ─── New Request Form ─────────────────────────────────────────────────────────
 
@@ -273,6 +333,7 @@ export default function SwapRequests({ currentUser }: SwapRequestsProps) {
   const [requests, setRequests] = useState<ShiftRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showDayOffForm, setShowDayOffForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ShiftRequest['status'] | 'all'>('all');
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
 
@@ -337,11 +398,19 @@ export default function SwapRequests({ currentUser }: SwapRequestsProps) {
 
         {/* New request button */}
         <button
-          onClick={() => setShowForm(v => !v)}
+          onClick={() => { setShowForm(v => !v); setShowDayOffForm(false); }}
           className="btn-primary text-sm py-2 no-print"
         >
           <PlusCircle className="w-4 h-4" />
           בקשה חדשה
+        </button>
+        <button
+          onClick={() => { setShowDayOffForm(v => !v); setShowForm(false); }}
+          className="btn-secondary text-sm py-2 no-print"
+          style={{ borderColor: 'rgba(168,85,247,0.3)', color: '#c084fc' }}
+        >
+          <CalendarOff className="w-4 h-4" />
+          בקש חופש
         </button>
       </div>
 
@@ -359,6 +428,25 @@ export default function SwapRequests({ currentUser }: SwapRequestsProps) {
               בקשת שינוי משמרת חדשה
             </h3>
             <NewRequestForm onCreated={load} onClose={() => setShowForm(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Day off form */}
+      <AnimatePresence>
+        {showDayOffForm && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="data-card p-5"
+            style={{ border: '1px solid rgba(168,85,247,0.25)' }}
+          >
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <CalendarOff className="w-4 h-4" style={{ color: '#c084fc' }} />
+              בקשת יום חופש
+            </h3>
+            <DayOffForm onCreated={load} onClose={() => setShowDayOffForm(false)} />
           </motion.div>
         )}
       </AnimatePresence>
