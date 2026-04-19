@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight } from 'lucide-react';
+import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ShiftBoard from '@/components/ShiftBoard';
 import WeekView from '@/components/WeekView';
 import SwapRequests from '@/components/SwapRequests';
+import MonthlySummary from '@/components/MonthlySummary';
 
 interface CurrentUser {
   id: number;
@@ -16,7 +17,7 @@ interface CurrentUser {
   role: 'admin' | 'manager' | 'employee';
 }
 
-type ViewMode = 'monthly' | 'weekly' | 'requests';
+type ViewMode = 'monthly' | 'weekly' | 'requests' | 'summary';
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -78,6 +79,7 @@ export default function SchedulePage() {
                   { key: 'monthly',  label: 'חודשי',   icon: LayoutGrid },
                   { key: 'weekly',   label: 'שבועי',   icon: CalendarRange },
                   { key: 'requests', label: 'בקשות',   icon: ArrowLeftRight },
+                  { key: 'summary',  label: 'סיכום',    icon: BarChart2 },
                 ] as const).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -111,8 +113,10 @@ export default function SchedulePage() {
               <ShiftBoard currentUser={user} />
             ) : view === 'weekly' ? (
               <WeekView currentUser={user} />
-            ) : (
+            ) : view === 'requests' ? (
               <SwapRequests currentUser={user} />
+            ) : (
+              <MonthlySummary />
             )}
           </motion.div>
 
