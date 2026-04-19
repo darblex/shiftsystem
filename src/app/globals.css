@@ -140,3 +140,77 @@ html.light body {
 @media (max-width: 768px) {
   .mobile-safe-bottom { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ── print ───────────────────────────────────────────────── */
+@media print {
+  /* reset dark background to white */
+  *, *::before, *::after {
+    background: white !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* hide chrome */
+  .no-print,
+  nav, aside,
+  [class*="Sidebar"],
+  [class*="MobileNav"],
+  [class*="ThemeToggle"],
+  button:not(.print-keep),
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    display: none !important;
+  }
+
+  /* full width content */
+  body { background: white !important; }
+  .app-shell { padding: 0 !important; }
+  .page-grid  { max-width: 100% !important; }
+
+  /* table */
+  table { border-collapse: collapse !important; width: 100% !important; font-size: 8pt !important; }
+  th, td { border: 1px solid #ccc !important; padding: 2px 4px !important; }
+  thead { background: #f0f0f0 !important; }
+  thead th { font-weight: bold !important; }
+
+  /* sticky columns — reset position so they print correctly */
+  th[class*="sticky"], td[class*="sticky"],
+  .sticky { position: static !important; }
+
+  /* shift badges — keep colored text but white bg */
+  .shift-badge {
+    border: 1px solid #999 !important;
+    background: transparent !important;
+    font-size: 7pt !important;
+    width: auto !important;
+    padding: 0 2px !important;
+  }
+  .shift-office        { color: #b45309 !important; }
+  .shift-home          { color: #1d4ed8 !important; }
+  .shift-night         { color: #7e22ce !important; }
+  .shift-duty          { color: #b91c1c !important; }
+  .shift-weekend_duty  { color: #c2410c !important; }
+  .shift-holiday       { color: #15803d !important; }
+  .shift-sick          { color: #be185d !important; }
+  .shift-vacation      { color: #0f766e !important; }
+  .shift-off           { color: #64748b !important; border-color: transparent !important; }
+
+  /* page setup */
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  /* page title */
+  .print-title {
+    display: block !important;
+    font-size: 13pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+}

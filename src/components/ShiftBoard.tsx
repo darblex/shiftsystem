@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle, FileSpreadsheet, FileText } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Copy, Loader2, AlertCircle, FileSpreadsheet, FileText, Printer } from 'lucide-react';
 import ShiftEditModal from './ShiftEditModal';
 import CopyMonthModal from './CopyMonthModal';
 import type { ShiftType } from '@/types';
@@ -369,6 +369,15 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
               <FileText className="w-3.5 h-3.5" />
               PDF
             </button>
+            <button
+              onClick={() => window.print()}
+              className="no-print flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+              style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}
+              title="הדפסת לוח משמרות"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              הדפסה
+            </button>
           </div>
         )}
 
@@ -405,6 +414,10 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl" style={{ border: '1px solid var(--border)' }}>
+          {/* Print-only title */}
+          <div className="print-title hidden">
+            לוח משמרות — {monthLabel(year, month)}
+          </div>
           <table className="w-full text-sm border-collapse" style={{ minWidth: `${180 + daysInMonth * 40}px` }}>
             {/* Head: days */}
             <thead>
