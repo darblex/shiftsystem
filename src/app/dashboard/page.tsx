@@ -16,6 +16,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
 import Link from 'next/link';
 import type { DutyAssignment, ShiftEntry } from '@/types';
 
@@ -257,9 +258,12 @@ export default function DashboardPage() {
                 {now.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
-              <LogOut className="w-4 h-4" /> יציאה
-            </button>
+            <div className="flex items-center gap-2">
+              <PushNotificationToggle />
+              <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
+                <LogOut className="w-4 h-4" /> יציאה
+              </button>
+            </div>
           </motion.div>
 
           {/* Stats */}

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ShieldCheck, Plus, Loader2, LogOut } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import DutyRoster from '@/components/DutyRoster';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
 
 interface CurrentUser {
   id: number;
@@ -72,6 +73,7 @@ export default function DutyPage() {
                   לחץ על יום להוספת תורנות
                 </span>
               )}
+              <PushNotificationToggle />
               <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
                 <LogOut className="w-4 h-4" /> יציאה
               </button>

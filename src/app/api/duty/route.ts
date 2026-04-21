@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db, upsertDutyAssignment, getDutyAssignmentsForMonth } from '@/lib/db';
 import { normalizeText, parseIsoDate, parseJsonObject, parsePositiveInt, parseMonth, parseYear, toBoolean } from '@/lib/validation';
+import { sendPushToUser } from '@/lib/webpush';
 import type { DutyAssignment } from '@/types';
 
 const VALID_DUTY_TYPES: DutyAssignment['duty_type'][] = ['regular', 'weekend', 'holiday'];
@@ -107,7 +108,16 @@ export const POST = requireAuth(async (req, { user: _user }) => {
        JOIN users u ON u.id = d.employee_id
        WHERE d.id = ?`
     )
-    .get((assignment as any).id);
+    .get((assignment as any).id) as any;
+
+  // Fire-and-forget push notification to the assigned employee
+  const dutyLabel = finalType === 'weekend' ? 'תורנות סופ״ש' : finalType === 'holiday' ? 'תורנות חג' : 'תורנות';
+  sendPushToUser(userId, {
+    title: `שובצת ל${dutyLabel}`,
+    body: `תאריך: ${date}${notes ? ` — ${notes}` : ''}`,
+    tag: `duty-${date}`,
+    url: '/duty',
+  }).catch(() => {});
 
   return NextResponse.json({ assignment: fullAssignment }, { status: 201 });
 }, ['admin', 'manager']);

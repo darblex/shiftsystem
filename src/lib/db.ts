@@ -132,6 +132,22 @@ function initDb(database: Database.Database) {
   );
 
   CREATE INDEX IF NOT EXISTS idx_shift_requests_requester ON shift_requests(requester_id);
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint   TEXT    NOT NULL UNIQUE,
+    p256dh     TEXT    NOT NULL,
+    auth       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
   CREATE INDEX IF NOT EXISTS idx_shift_requests_date ON shift_requests(target_date);
   CREATE INDEX IF NOT EXISTS idx_shift_requests_status ON shift_requests(status);
   CREATE INDEX IF NOT EXISTS idx_shift_requests_requester_target_status
@@ -617,6 +633,48 @@ export function resolveShiftRequest(
   });
 
   return run(id);
+}
+
+// ── Settings helpers ──────────────────────────────────────────────────────────
+
+export function getSetting(key: string): string | undefined {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+  return row?.value;
+}
+
+export function setSetting(key: string, value: string): void {
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
+}
+
+// ── Push subscription helpers ─────────────────────────────────────────────────
+
+export interface PushSubscriptionRow {
+  id: number;
+  user_id: number;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export function savePushSubscription(
+  userId: number,
+  endpoint: string,
+  p256dh: string,
+  auth: string,
+): void {
+  db.prepare(`
+    INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth
+  `).run(userId, endpoint, p256dh, auth);
+}
+
+export function removePushSubscription(endpoint: string): void {
+  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(endpoint);
+}
+
+export function getPushSubscriptionsForUser(userId: number): PushSubscriptionRow[] {
+  return db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').all(userId) as PushSubscriptionRow[];
 }
 
 // ── Holiday helpers (from DB) ─────────────────────────────────────────────────
