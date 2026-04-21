@@ -16,7 +16,7 @@ import {
 } from '@/lib/auth';
 import { getUserById, getUserByUsername } from '@/lib/db';
 import { normalizeText, parseJsonObject } from '@/lib/validation';
-import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/rateLimit';
+import { checkLoginRateLimit, checkUsernameRateLimit, resetLoginRateLimit } from '@/lib/rateLimit';
 
 // GET /api/auth — return current session user
 export async function GET(req: NextRequest) {
@@ -73,6 +73,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'נא למלא שם משתמש וסיסמה' }, { status: 400 });
   }
 
+  const userCheck = checkUsernameRateLimit(username);
+  if (!userCheck.allowed) {
+    return NextResponse.json(
+      { error: `החשבון נחסם זמנית עקב ניסיונות כניסה רבים. נסה שוב בעוד ${Math.ceil(userCheck.retryAfterSecs / 60)} דקות.` },
+      { status: 429, headers: { 'Retry-After': String(userCheck.retryAfterSecs) } }
+    );
+  }
+
   const userWithHash = getUserByUsername(username);
   if (!userWithHash) {
     return NextResponse.json({ error: 'שם משתמש או סיסמה שגויים' }, { status: 401 });
@@ -87,7 +95,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'שם משתמש או סיסמה שגויים' }, { status: 401 });
   }
 
-  resetLoginRateLimit(req);
+  resetLoginRateLimit(req, username);
 
   const { password_hash, ...user } = userWithHash;
   const token = signToken(user);
@@ -117,6 +125,14 @@ export async function PATCH(req: NextRequest) {
 
   const user = getUserById(tokenPayload.sub);
   if (!user || !user.active) return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 401 });
+
+  const userRate = checkUsernameRateLimit(`pw:${user.username}`);
+  if (!userRate.allowed) {
+    return NextResponse.json(
+      { error: `יותר מדי ניסיונות לשינוי סיסמה. נסה שוב בעוד ${Math.ceil(userRate.retryAfterSecs / 60)} דקות.` },
+      { status: 429, headers: { 'Retry-After': String(userRate.retryAfterSecs) } }
+    );
+  }
 
   let body: unknown;
   try {
