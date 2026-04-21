@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getShiftRequestById, resolveShiftRequest } from '@/lib/db';
 import { normalizeText, parseJsonObject, parsePositiveInt } from '@/lib/validation';
+import { sendPushToUser } from '@/lib/webpush';
 import type { ShiftRequest } from '@/types';
 
 type MutableStatus = Extract<ShiftRequest['status'], 'approved' | 'rejected' | 'cancelled'>;
@@ -79,6 +80,18 @@ export const PUT = requireAuth(async (req, { user }, context: { params: { id: st
           { status: 409 },
         );
     }
+  }
+
+  // Fire-and-forget push notification to the requester
+  if (mutableStatus === 'approved' || mutableStatus === 'rejected') {
+    const req2 = result.request;
+    const isApproved = mutableStatus === 'approved';
+    sendPushToUser(req2.requester_id, {
+      title: isApproved ? 'בקשת משמרת אושרה ✅' : 'בקשת משמרת נדחתה ❌',
+      body: `הבקשה שלך לתאריך ${req2.target_date} ${isApproved ? 'אושרה' : 'נדחתה'}${adminNote ? `: ${adminNote}` : '.'}`,
+      tag: `shift-request-${requestId}`,
+      url: '/dashboard',
+    }).catch(() => {});
   }
 
   return NextResponse.json({ request: result.request });
