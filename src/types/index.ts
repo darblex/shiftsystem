@@ -92,6 +92,18 @@ export interface ShiftRequest {
   updated_at: string;
 }
 
+export interface AttendanceRecord {
+  id: number;
+  user_id: number;
+  full_name?: string;
+  date: string;          // YYYY-MM-DD
+  clock_in: string;      // ISO timestamp
+  clock_out?: string;    // ISO timestamp, null if still clocked in
+  duration_minutes?: number;
+  notes?: string;
+  created_at: string;
+}
+
 export interface GenerateMonthOptions {
   year: number;
   month: number;

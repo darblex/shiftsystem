@@ -15,6 +15,7 @@ import type {
   Holiday,
   DutyAssignment,
   ShiftRequest,
+  AttendanceRecord,
 } from '@/types';
 
 // ── Database path ────────────────────────────────────────────────────────────
@@ -156,6 +157,21 @@ function initDb(database: Database.Database) {
     ON shift_requests(status, target_date);
   CREATE INDEX IF NOT EXISTS idx_shift_requests_requester_created_at
     ON shift_requests(requester_id, created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS attendance_records (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    date             TEXT    NOT NULL,
+    clock_in         TEXT    NOT NULL,
+    clock_out        TEXT,
+    duration_minutes INTEGER,
+    notes            TEXT,
+    created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_attendance_user_date ON attendance_records(user_id, date);
+  CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(date);
 `);
 
   // ── Seed helpers ─────────────────────────────────────────────────────────────
@@ -675,6 +691,63 @@ export function removePushSubscription(endpoint: string): void {
 
 export function getPushSubscriptionsForUser(userId: number): PushSubscriptionRow[] {
   return db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').all(userId) as PushSubscriptionRow[];
+}
+
+// ── Attendance helpers ────────────────────────────────────────────────────────
+
+export function getAttendanceForUser(userId: number, year: number, month: number): AttendanceRecord[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  return db
+    .prepare(
+      `SELECT * FROM attendance_records WHERE user_id = ? AND date LIKE ? ORDER BY date DESC`
+    )
+    .all(userId, `${prefix}%`) as AttendanceRecord[];
+}
+
+export function getAllAttendanceForMonth(year: number, month: number): AttendanceRecord[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  return db
+    .prepare(
+      `SELECT a.*, u.full_name
+       FROM attendance_records a
+       JOIN users u ON u.id = a.user_id
+       WHERE a.date LIKE ? ORDER BY a.date DESC, u.full_name`
+    )
+    .all(`${prefix}%`) as AttendanceRecord[];
+}
+
+export function getTodayAttendance(userId: number, today: string): AttendanceRecord | undefined {
+  return db
+    .prepare(`SELECT * FROM attendance_records WHERE user_id = ? AND date = ?`)
+    .get(userId, today) as AttendanceRecord | undefined;
+}
+
+export function clockIn(userId: number, date: string, clockIn: string, notes?: string | null): AttendanceRecord {
+  return db
+    .prepare(
+      `INSERT INTO attendance_records (user_id, date, clock_in, notes)
+       VALUES (?, ?, ?, ?)
+       RETURNING *`
+    )
+    .get(userId, date, clockIn, notes ?? null) as AttendanceRecord;
+}
+
+export function clockOut(userId: number, date: string, clockOut: string): AttendanceRecord | undefined {
+  const record = getTodayAttendance(userId, date);
+  if (!record) return undefined;
+
+  const clockInTime = new Date(record.clock_in).getTime();
+  const clockOutTime = new Date(clockOut).getTime();
+  const duration = Math.round((clockOutTime - clockInTime) / 60000);
+
+  return db
+    .prepare(
+      `UPDATE attendance_records
+       SET clock_out = ?, duration_minutes = ?
+       WHERE user_id = ? AND date = ?
+       RETURNING *`
+    )
+    .get(clockOut, duration > 0 ? duration : 0, userId, date) as AttendanceRecord | undefined;
 }
 
 // ── Holiday helpers (from DB) ─────────────────────────────────────────────────

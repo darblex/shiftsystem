@@ -9,6 +9,7 @@ import {
   CalendarRange,
   CalendarDays,
   ShieldCheck,
+  Clock,
   Settings,
   LogOut,
   ChevronRight,
@@ -41,10 +42,11 @@ export interface SidebarProps {
 }
 
 const DEFAULT_ITEMS: SidebarItem[] = [
-  { href: '/dashboard', label: 'לוח בקרה',       icon: LayoutDashboard },
-  { href: '/schedule',  label: 'לוח משמרות',     icon: CalendarRange },
-  { href: '/duty',      label: 'תורנויות',       icon: ShieldCheck },
-  { href: '/admin',     label: 'ניהול',           icon: Settings, adminOnly: true },
+  { href: '/dashboard',  label: 'לוח בקרה',   icon: LayoutDashboard },
+  { href: '/schedule',   label: 'לוח משמרות', icon: CalendarRange },
+  { href: '/duty',       label: 'תורנויות',   icon: ShieldCheck },
+  { href: '/attendance', label: 'נוכחות',     icon: Clock },
+  { href: '/admin',      label: 'ניהול',       icon: Settings, adminOnly: true },
 ];
 
 function Avatar({ user }: { user?: SidebarUser }) {
