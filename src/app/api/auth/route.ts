@@ -16,6 +16,7 @@ import {
 } from '@/lib/auth';
 import { getUserById, getUserByUsername } from '@/lib/db';
 import { normalizeText, parseJsonObject } from '@/lib/validation';
+import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/rateLimit';
 
 // GET /api/auth — return current session user
 export async function GET(req: NextRequest) {
@@ -44,6 +45,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const configError = getAuthConfigurationErrorResponse();
   if (configError) return configError;
+
+  const rateCheck = checkLoginRateLimit(req);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: `יותר מדי ניסיונות כניסה. נסה שוב בעוד ${Math.ceil(rateCheck.retryAfterSecs / 60)} דקות.` },
+      { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSecs) } }
+    );
+  }
 
   let body: unknown;
   try {
@@ -77,6 +86,8 @@ export async function POST(req: NextRequest) {
   if (!valid) {
     return NextResponse.json({ error: 'שם משתמש או סיסמה שגויים' }, { status: 401 });
   }
+
+  resetLoginRateLimit(req);
 
   const { password_hash, ...user } = userWithHash;
   const token = signToken(user);
