@@ -23,6 +23,13 @@ interface CurrentUser {
 
 type ViewMode = 'monthly' | 'weekly' | 'constraints' | 'summary';
 
+const VIEW_BUTTONS = [
+  { key: 'monthly', label: 'לוח חודשי', sub: 'כל החודש לפי עובדים', icon: LayoutGrid, accent: '#3b82f6' },
+  { key: 'weekly', label: 'לוח שבועי', sub: 'השבוע הקרוב בצורה ברורה', icon: CalendarRange, accent: '#22d3ee' },
+  { key: 'constraints', label: 'האילוצים שלי', sub: 'בחירת העדפות משמרת', icon: SlidersHorizontal, accent: '#f59e0b' },
+  { key: 'summary', label: 'סיכום חודש', sub: 'סטטיסטיקה וייצוא', icon: BarChart2, accent: '#a855f7' },
+] as const;
+
 export default function SchedulePage() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -45,6 +52,12 @@ export default function SchedulePage() {
       setView(requested);
     }
   }, []);
+
+  function changeView(nextView: ViewMode) {
+    setView(nextView);
+    const url = nextView === 'monthly' ? '/schedule' : `/schedule?view=${nextView}`;
+    window.history.replaceState(null, '', url);
+  }
 
   async function handleLogout() {
     await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
@@ -75,44 +88,55 @@ export default function SchedulePage() {
 
           {/* Header */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            <div>
-              <h1 className="section-title flex items-center gap-2">
-                <CalendarRange className="w-6 h-6 text-blue-400" />
-                לוח משמרות
-              </h1>
-              <p className="section-subtitle">תצוגה מלאה של לוח העבודה החודשי/שבועי</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="section-title flex items-center gap-2">
+                  <CalendarRange className="w-6 h-6 text-blue-400" />
+                  לוח משמרות
+                </h1>
+                <p className="section-subtitle">בחר תצוגה, עדכן אילוצים, ונהל משמרות בצורה נוחה מכל טלפון</p>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-              {/* View toggle — mobile-first grid, no horizontal scroll */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto">
-                {([
-                  { key: 'monthly',     label: 'חודשי',        icon: LayoutGrid },
-                  { key: 'weekly',      label: 'שבועי',        icon: CalendarRange },
-                  { key: 'constraints', label: 'האילוצים שלי', icon: SlidersHorizontal },
-                  { key: 'summary',     label: 'סיכום',         icon: BarChart2 },
-                ] as const).map(({ key, label, icon: Icon }) => (
-                  <button
-                    key={key}
-                    onClick={() => setView(key)}
-                    className="touch-target flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-bold transition-all rounded-2xl"
-                    style={{
-                      background: view === key ? 'linear-gradient(135deg, rgba(37,99,235,0.92), rgba(14,165,233,0.72))' : 'var(--bg-card)',
-                      color: view === key ? '#fff' : 'var(--muted)',
-                      border: `1px solid ${view === key ? 'rgba(147,197,253,0.35)' : 'var(--border)'}`,
-                    }}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{label}</span>
-                  </button>
-                ))}
+              {/* View actions — vertical on phones, compact on desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 w-full">
+                {VIEW_BUTTONS.map(({ key, label, sub, icon: Icon, accent }) => {
+                  const active = view === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={active}
+                      title={label}
+                      onClick={() => changeView(key)}
+                      className="touch-target group flex items-center gap-3 rounded-3xl px-4 py-3.5 text-right transition-all active:scale-[0.98]"
+                      style={{
+                        background: active ? `linear-gradient(135deg, ${accent}33, rgba(14,165,233,0.18))` : 'var(--bg-card)',
+                        color: active ? '#fff' : 'var(--fg)',
+                        border: `1px solid ${active ? accent + '66' : 'var(--border)'}`,
+                        boxShadow: active ? `0 14px 34px ${accent}22` : 'none',
+                      }}
+                    >
+                      <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                        style={{ background: active ? accent : 'rgba(255,255,255,0.06)', color: active ? '#fff' : accent }}>
+                        <Icon className="w-5 h-5" />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-black truncate">{label}</span>
+                        <span className="block text-xs truncate mt-0.5" style={{ color: active ? 'rgba(255,255,255,0.75)' : 'var(--muted)' }}>{sub}</span>
+                      </span>
+                      {active && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: accent }} />}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="hidden sm:flex items-center gap-2">
-                <button onClick={() => router.push('/dashboard')} className="btn-secondary">
+              <div className="grid grid-cols-2 sm:flex items-center gap-2">
+                <button type="button" onClick={() => router.push('/dashboard')} className="btn-secondary w-full sm:w-auto">
                   <ArrowRight className="w-4 h-4" /> חזור
                 </button>
-                <button onClick={handleLogout} className="btn-secondary">
+                <button type="button" onClick={handleLogout} className="btn-secondary w-full sm:w-auto">
                   <LogOut className="w-4 h-4" /> יציאה
                 </button>
               </div>

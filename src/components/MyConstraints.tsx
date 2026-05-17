@@ -116,7 +116,7 @@ export default function MyConstraints({ currentUser }: { currentUser: User }) {
   }
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const isChanged = selected !== (constraint?.preference ?? 'no_preference') || notes !== (constraint?.notes ?? '');
+  const isChanged = !constraint || selected !== (constraint.preference ?? 'no_preference') || notes !== (constraint.notes ?? '');
 
   return (
     <div className="flex flex-col gap-5 max-w-lg mx-auto w-full" dir="rtl">
@@ -235,8 +235,10 @@ export default function MyConstraints({ currentUser }: { currentUser: User }) {
               <><Loader2 className="w-5 h-5 animate-spin" /> שומר...</>
             ) : saved ? (
               <><CheckCircle2 className="w-5 h-5" /> נשמר בהצלחה ✓</>
+            ) : constraint ? (
+              <><SlidersHorizontal className="w-5 h-5" /> עדכן אילוץ</>
             ) : (
-              <><SlidersHorizontal className="w-5 h-5" /> שמור אילוץ</>
+              <><SlidersHorizontal className="w-5 h-5" /> שמור אילוץ ראשון</>
             )}
           </motion.button>
 
