@@ -129,6 +129,47 @@ function TodayShiftGroup({
   );
 }
 
+function HomeActionCard({
+  href,
+  icon: Icon,
+  title,
+  subtitle,
+  accent,
+  primary = false,
+}: {
+  href: string;
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  accent: string;
+  primary?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative overflow-hidden rounded-[1.7rem] p-5 min-h-[128px] flex items-center gap-4 transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+      style={{
+        background: primary
+          ? `linear-gradient(135deg, ${accent}ee, rgba(14,165,233,0.78))`
+          : 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025)), var(--bg-card)',
+        border: `1px solid ${primary ? 'rgba(255,255,255,0.20)' : 'var(--border)'}`,
+        boxShadow: primary ? `0 22px 55px ${accent}25` : '0 18px 45px rgba(0,0,0,0.18)',
+      }}
+    >
+      <div className="absolute -left-8 -bottom-10 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ background: accent }} />
+      <div className="relative w-14 h-14 rounded-3xl flex items-center justify-center shrink-0"
+        style={{ background: primary ? 'rgba(255,255,255,0.18)' : `${accent}22`, border: `1px solid ${primary ? 'rgba(255,255,255,0.24)' : accent + '40'}` }}>
+        <Icon className="w-7 h-7" style={{ color: primary ? '#fff' : accent }} />
+      </div>
+      <div className="relative flex-1 min-w-0 text-right">
+        <p className="text-lg font-black text-white truncate">{title}</p>
+        <p className="text-sm leading-6 mt-1" style={{ color: primary ? 'rgba(255,255,255,0.82)' : 'var(--muted)' }}>{subtitle}</p>
+      </div>
+      <ChevronLeft className="relative w-5 h-5 shrink-0 transition group-hover:-translate-x-1" style={{ color: primary ? '#fff' : 'var(--muted)' }} />
+    </Link>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -267,6 +308,25 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
+          {/* Primary actions */}
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <HomeActionCard
+              href="/schedule"
+              icon={CalendarRange}
+              title="לוח משמרות"
+              subtitle="צפייה במשמרות, מעבר שבועי/חודשי, והגדרת האילוצים שלי"
+              accent="#2563eb"
+              primary
+            />
+            <HomeActionCard
+              href="/duty"
+              icon={ShieldCheck}
+              title="לוח תורנויות"
+              subtitle="כוננויות, סופי שבוע, ותורנויות קרובות בצורה ברורה"
+              accent="#ef4444"
+            />
+          </motion.div>
+
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard icon={Users}        label="עובדים פעילים" value={employees.length} accent="#3b82f6" delay={0.05} />
@@ -369,21 +429,15 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Quick actions */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Link href="/schedule" className="btn-primary w-full">
-              <CalendarRange className="w-4 h-4" />
-              לוח משמרות
-            </Link>
-            {user.role === 'employee' && (
-              <Link href="/schedule?view=constraints" className="btn-secondary w-full">
-                <ShieldCheck className="w-4 h-4" />
-                האילוצים שלי
-              </Link>
-            )}
-            <Link href="/duty" className="btn-secondary w-full">
+          {/* Secondary actions */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Link href="/schedule?view=constraints" className="btn-secondary w-full">
               <ShieldCheck className="w-4 h-4" />
-              תורנויות
+              האילוצים שלי
+            </Link>
+            <Link href="/attendance" className="btn-secondary w-full">
+              <CalendarDays className="w-4 h-4" />
+              נוכחות
             </Link>
             {isAdmin && (
               <Link href="/admin" className="btn-secondary w-full">

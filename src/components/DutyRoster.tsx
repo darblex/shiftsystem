@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Plus, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Plus, Loader2, AlertCircle, ShieldCheck, CalendarDays } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -217,18 +217,19 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
   return (
     <div dir="rtl">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex items-center gap-1 data-card px-3 py-1.5">
-          <button onClick={goPrev} className="p-1 rounded-lg hover:bg-white/10 text-white">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <span className="px-3 text-sm font-semibold text-white whitespace-nowrap">{monthLabel(year, month)}</span>
-          <button onClick={goNext} className="p-1 rounded-lg hover:bg-white/10 text-white">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+      <div className="grid grid-cols-[46px_minmax(0,1fr)_46px] sm:flex sm:items-center gap-2 mb-4">
+        <button onClick={goPrev} className="btn-secondary p-2" aria-label="חודש קודם">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <div className="data-card px-4 py-3 text-center min-w-0">
+          <p className="text-sm font-black text-white truncate">{monthLabel(year, month)}</p>
+          <p className="text-xs" style={{ color: 'var(--muted)' }}>לוח תורנויות חודשי</p>
         </div>
+        <button onClick={goNext} className="btn-secondary p-2" aria-label="חודש הבא">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
         {isAdmin && (
-          <span className="text-xs badge-soft">לחץ על יום לתורנות חדשה</span>
+          <span className="text-xs badge-soft sm:mr-2 col-span-3 justify-center">לחץ על יום להוספת תורנות</span>
         )}
       </div>
 
@@ -270,7 +271,7 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.008 }}
-                  className="group rounded-xl p-1.5 cursor-pointer transition-all hover:scale-105"
+                  className="group rounded-2xl p-1.5 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{
                     background: isToday
                       ? 'rgba(59,130,246,0.15)'
@@ -278,7 +279,7 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
                       ? 'rgba(168,85,247,0.08)'
                       : 'var(--bg-card)',
                     border: `1px solid ${isToday ? 'rgba(59,130,246,0.4)' : 'var(--border)'}`,
-                    minHeight: 72,
+                    minHeight: 76,
                   }}
                   onClick={() => isAdmin && setAddTarget(cell.date)}
                 >
@@ -333,8 +334,44 @@ export default function DutyRoster({ currentUser, initialYear, initialMonth }: D
             })}
           </div>
 
+          {/* Upcoming duties list */}
+          <div className="mt-5 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-bold text-white">תורנויות החודש</h3>
+            </div>
+            {duties.length === 0 ? (
+              <div className="rounded-2xl px-4 py-5 text-center text-sm" style={{ background: 'rgba(255,255,255,0.035)', border: '1px solid var(--border)', color: 'var(--muted)' }}>
+                עדיין אין תורנויות בחודש הזה
+              </div>
+            ) : (
+              duties
+                .slice()
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map((duty) => (
+                  <div key={duty.id} className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}>
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: duty.duty_type === 'weekend' ? 'rgba(239,68,68,0.14)' : 'rgba(249,115,22,0.14)', color: duty.duty_type === 'weekend' ? '#f87171' : '#fb923c' }}>
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{duty.employee_name ?? 'עובד'}</p>
+                      <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                        {new Date(duty.date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                      {duty.notes && <p className="text-xs truncate mt-1" style={{ color: 'var(--muted)' }}>{duty.notes}</p>}
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded-full shrink-0" style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--muted)' }}>
+                      {duty.duty_type === 'weekend' ? 'סופ״ש' : duty.duty_type === 'holiday' ? 'חג' : 'כוננות'}
+                    </span>
+                  </div>
+                ))
+            )}
+          </div>
+
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex items-center gap-4 mt-4 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted)' }}>
               <ShieldCheck className="w-3 h-3 text-red-400" />
               תורנות סופ״ש

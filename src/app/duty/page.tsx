@@ -58,26 +58,28 @@ export default function DutyPage() {
         <div className="page-grid">
 
           {/* Header */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start justify-between gap-4 flex-wrap">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
               <h1 className="section-title flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-red-400" />
                 לוח תורנויות
               </h1>
-              <p className="section-subtitle">ניהול ותצוגת תורנויות סופ״ש וכוננויות</p>
+              <p className="section-subtitle">תורנויות וכוננויות בצורה פשוטה — לפי חודש, עובד ותאריך</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full lg:w-auto">
               {isAdmin && (
-                <span className="badge-soft flex items-center gap-1.5">
+                <span className="badge-soft flex items-center justify-center gap-1.5 col-span-2 sm:col-span-1">
                   <Plus className="w-3 h-3" />
                   לחץ על יום להוספת תורנות
                 </span>
               )}
-              <PushNotificationToggle />
-              <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
+              <div className="col-span-2 sm:col-span-1 flex justify-center sm:block">
+                <PushNotificationToggle />
+              </div>
+              <button type="button" onClick={() => router.push('/dashboard')} className="btn-secondary w-full sm:w-auto">
                 <ArrowRight className="w-4 h-4" /> חזור
               </button>
-              <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
+              <button type="button" onClick={handleLogout} className="btn-secondary w-full sm:w-auto">
                 <LogOut className="w-4 h-4" /> יציאה
               </button>
             </div>
@@ -88,7 +90,7 @@ export default function DutyPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="data-card p-4 md:p-6"
+            className="data-card p-3 sm:p-4 md:p-6 no-x-scroll"
           >
             <DutyRoster currentUser={user} />
           </motion.div>
