@@ -139,9 +139,14 @@ export default function LoginPage() {
         </form>
       </motion.div>
 
-      <p className="mt-8 text-xs relative z-10" style={{ color: 'var(--muted)' }}>
-        © {new Date().getFullYear()} מערכת ניהול משמרות הפניקס
-      </p>
+      <div className="mt-8 flex flex-col items-center gap-1 relative z-10">
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+          © {new Date().getFullYear()} מערכת ניהול משמרות הפניקס
+        </p>
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>
+          כל הזכויות שייכות ל־TH AI Project
+        </p>
+      </div>
     </div>
   );
 }
