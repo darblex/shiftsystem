@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CalendarDays, LogOut, RefreshCcw, Shield, Users, UserPlus, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import MobileNav from '@/components/MobileNav';
 import StatsCards from '@/components/StatsCards';
 import EmployeeList from '@/components/EmployeeList';
 import ScheduleCalendar from '@/components/ScheduleCalendar';
@@ -162,10 +161,6 @@ export default function AdminPage() {
       <Sidebar
         user={{ name: user.full_name, email: user.email, role: user.role }}
         isAdmin
-        items={[
-          { href: '/admin', label: 'ניהול', icon: Shield },
-          { href: '/dashboard', label: 'עובד', icon: CalendarDays },
-        ]}
         onLogout={handleLogout}
       />
 
@@ -251,12 +246,6 @@ export default function AdminPage() {
         </div>
       </main>
 
-      <div className="md:hidden">
-        <MobileNav isAdmin items={[
-          { href: '/admin', label: 'ניהול', icon: Shield },
-          { href: '/dashboard', label: 'עובד', icon: CalendarDays },
-        ]} />
-      </div>
     </div>
   );
 }

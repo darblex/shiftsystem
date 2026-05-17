@@ -5,16 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   CalendarDays,
-  Users,
   LayoutDashboard,
   ShieldCheck,
-  Sun,
-  Moon,
+  Clock,
+  Settings,
+  BarChart2,
+  UserCircle,
   type LucideIcon,
 } from 'lucide-react';
-import { useTheme } from '@/lib/useTheme';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface NavItem {
   href: string;
@@ -26,48 +24,47 @@ export interface NavItem {
 
 export interface MobileNavProps {
   isAdmin?: boolean;
-  /** Override the default nav items */
   items?: NavItem[];
   className?: string;
 }
 
-// ─── Defaults ────────────────────────────────────────────────────────────────
-
-const DEFAULT_NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'בית',        icon: LayoutDashboard },
-  { href: '/schedule',  label: 'משמרות',     icon: CalendarDays },
-  { href: '/duty',      label: 'תורנויות',   icon: ShieldCheck },
-  { href: '/admin',     label: 'ניהול',      icon: Users, adminOnly: true },
+const EMPLOYEE_ITEMS: NavItem[] = [
+  { href: '/dashboard',  label: 'בית',     icon: LayoutDashboard },
+  { href: '/schedule',   label: 'משמרות',  icon: CalendarDays },
+  { href: '/duty',       label: 'תורנויות', icon: ShieldCheck },
+  { href: '/attendance', label: 'נוכחות',   icon: Clock },
+  { href: '/profile',    label: 'פרופיל',   icon: UserCircle },
 ];
 
-// ─── Component ───────────────────────────────────────────────────────────────
+const ADMIN_ITEMS: NavItem[] = [
+  { href: '/dashboard', label: 'בית',    icon: LayoutDashboard },
+  { href: '/schedule',  label: 'משמרות', icon: CalendarDays },
+  { href: '/reports',   label: 'דוחות',  icon: BarChart2 },
+  { href: '/admin',     label: 'ניהול',  icon: Settings },
+  { href: '/profile',   label: 'פרופיל', icon: UserCircle },
+];
 
-export function MobileNav({
-  isAdmin = false,
-  items,
-  className = '',
-}: MobileNavProps) {
+export function MobileNav({ isAdmin = false, items, className = '' }: MobileNavProps) {
   const pathname = usePathname();
-  const { theme, toggle } = useTheme();
-  const isDark = theme === 'dark';
-  const navItems = (items ?? DEFAULT_NAV_ITEMS).filter(
-    (item) => !item.adminOnly || isAdmin
-  );
+  const navItems = items ?? (isAdmin ? ADMIN_ITEMS : EMPLOYEE_ITEMS);
 
   return (
     <nav
       dir="rtl"
-      className={`
-        fixed bottom-0 inset-x-0 z-50
-        bg-zinc-950/80 backdrop-blur-xl
-        border-t border-white/10
-        safe-area-pb
-        ${className}
-      `}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className={`fixed bottom-0 inset-x-0 z-50 md:hidden px-3 pb-3 ${className}`}
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
       aria-label="ניווט ראשי"
     >
-      <div className="flex items-stretch h-16">
+      <div
+        className="mx-auto max-w-md h-[72px] grid items-center rounded-[1.55rem] px-1.5 shadow-2xl"
+        style={{
+          gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
+          background: 'linear-gradient(180deg, rgba(15,23,42,0.94), rgba(2,6,23,0.92))',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 20px 55px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -76,47 +73,34 @@ export function MobileNav({
             <Link
               key={item.href}
               href={item.href}
-              className={`
-                relative flex-1 flex flex-col items-center justify-center gap-0.5
-                transition-colors duration-200 focus:outline-none
-                ${active ? 'text-blue-400' : 'text-zinc-500 hover:text-zinc-300'}
-              `}
+              className="relative h-[58px] rounded-[1.15rem] flex flex-col items-center justify-center gap-1 transition focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+              style={{ color: active ? '#ffffff' : '#8ea0b8' }}
               aria-current={active ? 'page' : undefined}
             >
               {active && (
                 <motion.span
-                  layoutId="mobile-nav-indicator"
-                  className="absolute top-0 inset-x-2 h-0.5 rounded-full bg-gradient-to-l from-blue-500 to-indigo-500"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  layoutId="mobile-nav-active-pill"
+                  className="absolute inset-1 rounded-[1rem]"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(37,99,235,0.95), rgba(14,165,233,0.78))',
+                    boxShadow: '0 10px 30px rgba(37,99,235,0.35)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
                 />
               )}
 
-              <div className="relative">
-                <Icon
-                  className={`w-5 h-5 transition-transform duration-200 ${active ? 'scale-110' : ''}`}
-                  strokeWidth={active ? 2.2 : 1.8}
-                />
+              <span className="relative z-10">
+                <Icon className={`w-5 h-5 transition-transform ${active ? 'scale-110' : ''}`} strokeWidth={active ? 2.4 : 1.9} />
                 {item.badge != null && item.badge > 0 && (
-                  <span className="absolute -top-1 -left-1 min-w-[16px] h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                  <span className="absolute -top-2 -left-2 min-w-[17px] h-[17px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 leading-none">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
-              </div>
-
-              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              </span>
+              <span className="relative z-10 text-[10px] font-bold leading-none truncate max-w-full px-1">{item.label}</span>
             </Link>
           );
         })}
-
-        {/* Theme toggle in mobile nav */}
-        <button
-          onClick={toggle}
-          className="relative flex-1 flex flex-col items-center justify-center gap-0.5 text-zinc-500 hover:text-zinc-300 transition-colors duration-200 focus:outline-none"
-          aria-label={isDark ? 'תצוגה בהירה' : 'תצוגה כהה'}
-        >
-          {isDark ? <Sun className="w-5 h-5" strokeWidth={1.8} /> : <Moon className="w-5 h-5" strokeWidth={1.8} />}
-          <span className="text-[10px] font-medium leading-none">{isDark ? 'בהיר' : 'כהה'}</span>
-        </button>
       </div>
     </nav>
   );

@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2, ArrowRight, SlidersHorizontal } from 'lucide-react';
+import { CalendarRange, LayoutGrid, Loader2, LogOut, BarChart2, ArrowRight, SlidersHorizontal } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ShiftBoard from '@/components/ShiftBoard';
 import WeekView from '@/components/WeekView';
-import SwapRequests from '@/components/SwapRequests';
 import MonthlySummary from '@/components/MonthlySummary';
 import MyConstraints from '@/components/MyConstraints';
 
@@ -40,6 +39,13 @@ export default function SchedulePage() {
 
   useEffect(() => { void loadUser(); }, [loadUser]);
 
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('view') as ViewMode | null;
+    if (requested && ['monthly', 'weekly', 'constraints', 'summary'].includes(requested)) {
+      setView(requested);
+    }
+  }, []);
+
   async function handleLogout() {
     await fetch('/api/auth', { method: 'DELETE', credentials: 'include' });
     router.push('/login');
@@ -68,7 +74,7 @@ export default function SchedulePage() {
         <div className="page-grid">
 
           {/* Header */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start justify-between gap-4 flex-wrap">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
               <h1 className="section-title flex items-center gap-2">
                 <CalendarRange className="w-6 h-6 text-blue-400" />
@@ -77,36 +83,39 @@ export default function SchedulePage() {
               <p className="section-subtitle">תצוגה מלאה של לוח העבודה החודשי/שבועי</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* View toggle */}
-              <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+              {/* View toggle — mobile-first grid, no horizontal scroll */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto">
                 {([
-                  { key: 'monthly',     label: 'חודשי',     icon: LayoutGrid },
-                  { key: 'weekly',      label: 'שבועי',     icon: CalendarRange },
-                  { key: 'constraints', label: 'אילוצים',   icon: SlidersHorizontal },
-                  { key: 'summary',     label: 'סיכום',      icon: BarChart2 },
+                  { key: 'monthly',     label: 'חודשי',        icon: LayoutGrid },
+                  { key: 'weekly',      label: 'שבועי',        icon: CalendarRange },
+                  { key: 'constraints', label: 'האילוצים שלי', icon: SlidersHorizontal },
+                  { key: 'summary',     label: 'סיכום',         icon: BarChart2 },
                 ] as const).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
                     onClick={() => setView(key)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-all"
+                    className="touch-target flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-bold transition-all rounded-2xl"
                     style={{
-                      background: view === key ? 'rgba(59,130,246,0.2)' : 'var(--bg-card)',
-                      color: view === key ? '#93c5fd' : 'var(--muted)',
+                      background: view === key ? 'linear-gradient(135deg, rgba(37,99,235,0.92), rgba(14,165,233,0.72))' : 'var(--bg-card)',
+                      color: view === key ? '#fff' : 'var(--muted)',
+                      border: `1px solid ${view === key ? 'rgba(147,197,253,0.35)' : 'var(--border)'}`,
                     }}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{label}</span>
                   </button>
                 ))}
               </div>
 
-              <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
-                <ArrowRight className="w-4 h-4" /> חזור
-              </button>
-              <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
-                <LogOut className="w-4 h-4" /> יציאה
-              </button>
+              <div className="hidden sm:flex items-center gap-2">
+                <button onClick={() => router.push('/dashboard')} className="btn-secondary">
+                  <ArrowRight className="w-4 h-4" /> חזור
+                </button>
+                <button onClick={handleLogout} className="btn-secondary">
+                  <LogOut className="w-4 h-4" /> יציאה
+                </button>
+              </div>
             </div>
           </motion.div>
 
@@ -115,7 +124,7 @@ export default function SchedulePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="data-card p-4 md:p-6"
+            className="data-card p-3 sm:p-4 md:p-6 no-x-scroll"
           >
             {view === 'monthly' ? (
               <ShiftBoard currentUser={user} />

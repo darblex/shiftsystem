@@ -370,23 +370,23 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Quick actions */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap gap-3">
-            <Link href="/schedule" className="btn-primary">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link href="/schedule" className="btn-primary w-full">
               <CalendarRange className="w-4 h-4" />
               לוח משמרות
             </Link>
             {user.role === 'employee' && (
-              <Link href="/schedule?view=requests" className="btn-secondary">
+              <Link href="/schedule?view=constraints" className="btn-secondary w-full">
                 <ShieldCheck className="w-4 h-4" />
-                הגש בקשה
+                האילוצים שלי
               </Link>
             )}
-            <Link href="/duty" className="btn-secondary">
+            <Link href="/duty" className="btn-secondary w-full">
               <ShieldCheck className="w-4 h-4" />
               תורנויות
             </Link>
             {isAdmin && (
-              <Link href="/admin" className="btn-secondary">
+              <Link href="/admin" className="btn-secondary w-full">
                 <Users className="w-4 h-4" />
                 ניהול עובדים
               </Link>

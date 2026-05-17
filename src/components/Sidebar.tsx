@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { ThemeToggle } from './ThemeToggle';
+import MobileNav from './MobileNav';
 
 export interface SidebarItem {
   href: string;
@@ -125,6 +126,7 @@ export function Sidebar({ user, isAdmin = false, items, onLogout, className = ''
   const navItems = (items ?? DEFAULT_ITEMS).filter((item) => !item.adminOnly || isAdmin);
 
   return (
+    <>
     <aside
       dir="rtl"
       className={`hidden md:flex flex-col h-screen sticky top-0 transition-all duration-300 ease-in-out overflow-hidden ${className}`}
@@ -207,6 +209,8 @@ export function Sidebar({ user, isAdmin = false, items, onLogout, className = ''
         </div>
       </div>
     </aside>
+    <MobileNav isAdmin={isAdmin} />
+    </>
   );
 }
 

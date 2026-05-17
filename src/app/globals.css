@@ -3,13 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0f0f13;
-  --bg-card: #1a1a24;
-  --bg-elevated: #252535;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --fg: #e2e2f0;
-  --muted: #8888a8;
+  --bg: #090b12;
+  --bg-card: rgba(18, 23, 37, 0.88);
+  --bg-elevated: rgba(27, 35, 54, 0.94);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --fg: #f3f7ff;
+  --muted: #9aa7bd;
+  --phoenix-blue: #2563eb;
+  --phoenix-cyan: #22d3ee;
+  --phoenix-gold: #f59e0b;
+  --phoenix-rose: #ef4444;
 
   /* Light theme overrides */
   &.light {
@@ -35,14 +39,32 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; min-height: 100%; }
+html, body { margin: 0; padding: 0; min-height: 100%; max-width: 100%; overflow-x: hidden; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
   color: var(--fg);
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse at 80% 0%, rgba(59,130,246,0.12) 0%, transparent 40%),
-    radial-gradient(ellipse at 20% 100%, rgba(168,85,247,0.10) 0%, transparent 40%);
+    radial-gradient(circle at 78% -8%, rgba(37,99,235,0.28) 0%, transparent 34%),
+    radial-gradient(circle at 8% 18%, rgba(34,211,238,0.11) 0%, transparent 30%),
+    radial-gradient(circle at 18% 106%, rgba(245,158,11,0.10) 0%, transparent 36%),
+    linear-gradient(180deg, #070912 0%, #0b1020 48%, #080a12 100%);
+  overscroll-behavior-y: none;
+}
+
+body::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.32;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 70%);
 }
 
 html.light body {
@@ -53,19 +75,23 @@ html.light body {
 
 /* ── layout ─────────────────────────────────────────────── */
 .app-shell    { @apply min-h-screen px-4 py-4 md:px-6 md:py-6; }
-.page-grid    { @apply mx-auto max-w-7xl grid gap-4 md:gap-6; }
+.page-grid    { @apply mx-auto w-full max-w-7xl grid gap-4 md:gap-6; }
+.mobile-stack { @apply grid grid-cols-1 gap-4; }
+.touch-target { min-height: 44px; }
+.no-x-scroll { max-width: 100%; overflow-x: hidden; }
 
 /* ── text ────────────────────────────────────────────────── */
-.section-title   { @apply text-xl md:text-2xl font-bold tracking-tight text-white; }
-.section-subtitle { @apply text-sm; color: var(--muted); }
+.section-title   { @apply text-xl md:text-2xl font-black tracking-tight text-white; text-wrap: balance; }
+.section-subtitle { @apply text-sm leading-6; color: var(--muted); }
 
 /* ── cards ───────────────────────────────────────────────── */
 .data-card {
-  background: var(--bg-card);
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025)), var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.35rem;
+  box-shadow: 0 20px 70px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 .elevated-card {
   background: var(--bg-elevated);
@@ -77,8 +103,9 @@ html.light body {
 .input-dark,
 .select-dark,
 .textarea-dark {
-  @apply w-full rounded-xl border px-4 py-3 text-sm text-white outline-none transition;
-  background: rgba(255,255,255,0.04);
+  @apply w-full rounded-2xl border px-4 py-3.5 text-base md:text-sm text-white outline-none transition;
+  min-height: 48px;
+  background: rgba(255,255,255,0.055);
   border-color: var(--border-strong);
 }
 .input-dark:focus,
@@ -92,15 +119,17 @@ html.light body {
 
 /* ── buttons ─────────────────────────────────────────────── */
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60;
-  background: linear-gradient(135deg, #2563eb, #6366f1);
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98];
+  min-height: 46px;
+  background: linear-gradient(135deg, var(--phoenix-blue), #4f46e5 55%, #0ea5e9);
 }
 .btn-primary:hover { background: linear-gradient(135deg, #1d4ed8, #4f46e5); }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60;
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold text-white transition focus:outline-none focus:ring-2 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98];
+  min-height: 46px;
   border-color: var(--border-strong);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.06);
 }
 .btn-secondary:hover { background: rgba(255,255,255,0.10); }
 
@@ -138,7 +167,13 @@ html.light body {
 
 /* ── mobile ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .mobile-safe-bottom { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .app-shell { padding: 14px 14px 18px; }
+  .page-grid { gap: 14px; }
+  .mobile-safe-bottom { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .data-card { border-radius: 1.25rem; }
+  .section-title { font-size: 1.35rem; line-height: 1.25; }
+  .section-subtitle { font-size: 0.86rem; }
+  button, a, input, select, textarea { touch-action: manipulation; }
 }
 
 /* ── print ───────────────────────────────────────────────── */
