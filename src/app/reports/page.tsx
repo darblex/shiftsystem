@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { BarChart2, ChevronRight, ChevronLeft, Loader2, Users, CalendarRange, Trophy, Clock } from 'lucide-react';
+import { BarChart2, ChevronRight, ChevronLeft, Loader2, Users, CalendarRange, Trophy, Clock, LogOut, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 
 interface ShiftsPerEmployee {
@@ -176,6 +176,12 @@ export default function ReportsPage() {
 
             {/* Month nav */}
             <div className="flex items-center gap-2">
+              <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
+                <ArrowRight className="w-4 h-4" /> חזור
+              </button>
+              <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
+                <LogOut className="w-4 h-4" /> יציאה
+              </button>
               <button onClick={prevMonth} className="btn-secondary p-2"><ChevronRight className="w-4 h-4" /></button>
               <span className="text-sm font-semibold text-white min-w-[120px] text-center">{monthLabel}</span>
               <button onClick={nextMonthFn} className="btn-secondary p-2"><ChevronLeft className="w-4 h-4" /></button>

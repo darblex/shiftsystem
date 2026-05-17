@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2 } from 'lucide-react';
+import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ShiftBoard from '@/components/ShiftBoard';
 import WeekView from '@/components/WeekView';
@@ -96,6 +96,9 @@ export default function SchedulePage() {
                 ))}
               </div>
 
+              <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
+                <ArrowRight className="w-4 h-4" /> חזור
+              </button>
               <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
                 <LogOut className="w-4 h-4" /> יציאה
               </button>

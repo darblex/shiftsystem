@@ -14,6 +14,7 @@ import {
   LogOut,
   Loader2,
   CalendarDays,
+  ArrowRight,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import PushNotificationToggle from '@/components/PushNotificationToggle';

@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  ArrowRight,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import type { AttendanceRecord } from '@/types';
@@ -314,6 +315,12 @@ export default function AttendancePage() {
 
             {/* Month nav */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="btn-secondary hidden sm:inline-flex"
+              >
+                <ArrowRight className="w-4 h-4" /> חזור
+              </button>
               <button
                 onClick={prevMonth}
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"

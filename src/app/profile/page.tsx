@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { UserCircle, Loader2, Save, Key, CalendarRange } from 'lucide-react';
+import { UserCircle, Loader2, Save, Key, CalendarRange, LogOut, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import * as Toast from '@radix-ui/react-toast';
 
@@ -155,14 +155,24 @@ export default function ProfilePage() {
           <div className="page-grid">
 
             {/* Header */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' }}>
-                <UserCircle className="w-5 h-5 text-blue-400" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' }}>
+                  <UserCircle className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h1 className="section-title">פרופיל אישי</h1>
+                  <p className="section-subtitle">{user.full_name}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="section-title">פרופיל אישי</h1>
-                <p className="section-subtitle">{user.full_name}</p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
+                  <ArrowRight className="w-4 h-4" /> חזור
+                </button>
+                <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
+                  <LogOut className="w-4 h-4" /> יציאה
+                </button>
               </div>
             </motion.div>
 

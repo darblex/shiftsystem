@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Plus, Loader2, LogOut } from 'lucide-react';
+import { ShieldCheck, Plus, Loader2, LogOut, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import DutyRoster from '@/components/DutyRoster';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
@@ -74,6 +74,9 @@ export default function DutyPage() {
                 </span>
               )}
               <PushNotificationToggle />
+              <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
+                <ArrowRight className="w-4 h-4" /> חזור
+              </button>
               <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex">
                 <LogOut className="w-4 h-4" /> יציאה
               </button>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarDays, LogOut, RefreshCcw, Shield, Users, UserPlus } from 'lucide-react';
+import { CalendarDays, LogOut, RefreshCcw, Shield, Users, UserPlus, ArrowRight } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import StatsCards from '@/components/StatsCards';
@@ -177,6 +177,7 @@ export default function AdminPage() {
               <p className="section-subtitle">ניהול עובדים, לוחות, נוכחות ואילוצים</p>
             </div>
             <div className="flex gap-2">
+              <button onClick={() => router.push('/dashboard')} className="btn-secondary"><ArrowRight className="h-4 w-4" /> חזור</button>
               <button onClick={loadData} className="btn-secondary"><RefreshCcw className="h-4 w-4" /> רענן</button>
               <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex"><LogOut className="h-4 w-4" /> התנתקות</button>
             </div>
