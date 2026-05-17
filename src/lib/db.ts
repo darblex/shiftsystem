@@ -258,6 +258,20 @@ function initDb(database: Database.Database) {
   // Run seeds once
   seedUsers(database);
   seedHolidays(database);
+
+  // ── Admin override via env vars (production setup) ─────────────────────────
+  // Set ADMIN_USERNAME + ADMIN_PASSWORD env vars to force-update the admin account on startup.
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminUsername && adminPassword) {
+    const existingAdmin = database.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").get() as { id: number } | undefined;
+    const hash = bcrypt.hashSync(adminPassword, 12);
+    if (existingAdmin) {
+      database.prepare("UPDATE users SET username=?, password_hash=?, updated_at=datetime('now') WHERE role='admin'").run(adminUsername, hash);
+    } else {
+      database.prepare(`INSERT INTO users (username, email, full_name, role, department, password_hash) VALUES (?, ?, ?, 'admin', 'ניהול', ?)`).run(adminUsername, `${adminUsername}@phoenix.local`, 'מנהל ראשי', hash);
+    }
+  }
 }
 
 // Export db as lazy singleton
