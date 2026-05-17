@@ -10,7 +10,7 @@ interface Bucket {
 const buckets = new Map<string, Bucket>();
 
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_ATTEMPTS_PER_IP = 5;
+const MAX_ATTEMPTS_PER_IP = 10;
 const MAX_ATTEMPTS_PER_USERNAME = 10;
 
 /**
