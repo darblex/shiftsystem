@@ -297,43 +297,43 @@ export default function AttendancePage() {
         <div className="page-grid">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                 style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}
               >
                 <Clock className="w-5 h-5" style={{ color: '#818cf8' }} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-white">נוכחות</h1>
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                <p className="text-sm truncate" style={{ color: 'var(--muted)' }}>
                   {isAdmin ? 'כל העובדים' : 'הנוכחות שלי'}
                 </p>
               </div>
             </div>
 
             {/* Month nav */}
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-[1fr_44px_minmax(0,1fr)_44px] sm:flex sm:items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="btn-secondary hidden sm:inline-flex"
+                className="btn-secondary w-full sm:w-auto"
               >
                 <ArrowRight className="w-4 h-4" /> חזור
               </button>
               <button
                 onClick={prevMonth}
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
-                style={{ color: 'var(--muted)' }}
+                className="w-11 h-11 rounded-2xl flex items-center justify-center transition-colors hover:bg-white/10"
+                style={{ color: 'var(--muted)', border: '1px solid var(--border)', background: 'var(--bg-card)' }}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-white min-w-[110px] text-center">{monthLabel}</span>
+              <span className="text-sm font-bold text-white text-center truncate px-1 flex items-center justify-center">{monthLabel}</span>
               <button
                 onClick={nextMonth}
                 disabled={isCurrentMonth}
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10 disabled:opacity-30"
-                style={{ color: 'var(--muted)' }}
+                className="w-11 h-11 rounded-2xl flex items-center justify-center transition-colors hover:bg-white/10 disabled:opacity-30"
+                style={{ color: 'var(--muted)', border: '1px solid var(--border)', background: 'var(--bg-card)' }}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>

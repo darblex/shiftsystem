@@ -176,10 +176,50 @@ export default function MonthlySummary() {
         </div>
       )}
 
-      {/* Per-employee table */}
+      {/* Per-employee summary */}
       <div className="data-card p-5">
         <h3 className="text-sm font-semibold text-white mb-3">סיכום לפי עובד</h3>
-        <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
+
+        {/* Mobile cards */}
+        <div className="md:hidden flex flex-col gap-3">
+          {sortedEmployees.map((emp, i) => (
+            <motion.div
+              key={emp.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.02 }}
+              className="rounded-2xl p-4"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <p className="text-white font-bold truncate">{emp.full_name}</p>
+                  {emp.department && <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>{emp.department}</p>}
+                </div>
+                <span className="text-xs font-bold rounded-full px-3 py-1 shrink-0" style={{ background: 'rgba(59,130,246,0.2)', color: '#60a5fa' }}>
+                  {emp.working_days} ימי עבודה
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {WORK_SHIFTS.map(s => (
+                  <div key={s} className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.035)' }}>
+                    <p className="text-[11px]" style={{ color: 'var(--muted)' }}>{data.shiftLabel[s]}</p>
+                    <p className="text-sm font-bold text-white">{emp.counts[s] ?? 0}</p>
+                  </div>
+                ))}
+                {ABSENCE_SHIFTS.map(s => (
+                  <div key={s} className="rounded-xl px-3 py-2" style={{ background: 'rgba(248,113,113,0.06)' }}>
+                    <p className="text-[11px]" style={{ color: '#fca5a5' }}>{data.shiftLabel[s]}</p>
+                    <p className="text-sm font-bold" style={{ color: (emp.counts[s] ?? 0) > 0 ? '#f87171' : 'var(--muted)' }}>{emp.counts[s] ?? 0}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr style={{ background: 'var(--bg-elevated)' }}>

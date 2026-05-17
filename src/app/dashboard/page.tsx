@@ -314,7 +314,7 @@ export default function DashboardPage() {
               href="/schedule"
               icon={CalendarRange}
               title="לוח משמרות"
-              subtitle="צפייה במשמרות, מעבר שבועי/חודשי, והגדרת האילוצים שלי"
+              subtitle="צפייה במשמרות ומעבר מהיר בין תצוגה חודשית לשבועית"
               accent="#2563eb"
               primary
             />

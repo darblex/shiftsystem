@@ -166,14 +166,14 @@ export default function AdminPage() {
 
       <main className="app-shell flex-1 mobile-safe-bottom">
         <div className="page-grid">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="min-w-0">
               <h1 className="section-title">פאנל ניהול</h1>
               <p className="section-subtitle">ניהול עובדים, לוחות, נוכחות ואילוצים</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => router.push('/dashboard')} className="btn-secondary"><ArrowRight className="h-4 w-4" /> חזור</button>
-              <button onClick={loadData} className="btn-secondary"><RefreshCcw className="h-4 w-4" /> רענן</button>
+            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+              <button onClick={() => router.push('/dashboard')} className="btn-secondary w-full sm:w-auto"><ArrowRight className="h-4 w-4" /> חזור</button>
+              <button onClick={loadData} className="btn-secondary w-full sm:w-auto"><RefreshCcw className="h-4 w-4" /> רענן</button>
               <button onClick={handleLogout} className="btn-secondary hidden sm:inline-flex"><LogOut className="h-4 w-4" /> התנתקות</button>
             </div>
           </div>
