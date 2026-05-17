@@ -428,7 +428,80 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
           <span>טוען לוח משמרות...</span>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl" style={{ border: '1px solid var(--border)' }}>
+        <>
+        {/* Mobile-first employee cards — no horizontal table scroll */}
+        <div className="md:hidden flex flex-col gap-3">
+          {rows.map((row, ri) => (
+            <motion.div
+              key={row.employee.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: ri * 0.025 }}
+              className="rounded-3xl p-4"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white text-sm font-black shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #0ea5e9)' }}>
+                    {row.employee.full_name.split(' ').map((w) => w[0]).slice(0, 2).join('')}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-white font-bold truncate">{row.employee.full_name}</p>
+                    {row.employee.department && <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>{row.employee.department}</p>}
+                  </div>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => setCopyTarget({ userId: row.employee.id, name: row.employee.full_name })}
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--muted)' }}
+                    aria-label={`העתק משמרות עבור ${row.employee.full_name}`}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5">
+                {days.map((d) => {
+                  const dow = getDayOfWeek(year, month, d);
+                  const dateStr = padDate(year, month, d);
+                  const isWeekend = dow === 5 || dow === 6;
+                  const isHoliday = holidaySet.has(dateStr);
+                  const isToday = dateStr === padDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+                  const entry = row.shifts[dateStr];
+                  const type = entry?.shift_type ?? 'day_off';
+                  const cls = SHIFT_CLASS[type] ?? 'shift-off';
+                  const canEdit = isAdmin;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => canEdit && setEditTarget({ employee: row.employee, date: dateStr, entry })}
+                      disabled={!canEdit}
+                      className="min-h-[54px] rounded-2xl flex flex-col items-center justify-center gap-1 transition active:scale-95 disabled:opacity-100"
+                      style={{
+                        background: isToday ? 'rgba(59,130,246,0.15)' : isWeekend ? 'rgba(168,85,247,0.06)' : isHoliday ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.035)',
+                        border: `1px solid ${isToday ? 'rgba(96,165,250,0.35)' : 'var(--border)'}`,
+                      }}
+                      aria-label={`${d} ${HEBREW_WEEKDAYS[dow]} ${SHIFT_LABEL[type] ?? type}`}
+                    >
+                      <span className="text-[10px] font-bold" style={{ color: isToday ? '#93c5fd' : 'var(--muted)' }}>{d}</span>
+                      <span className={`shift-badge ${cls}`}>{SHIFT_ABBREV[type] ?? '—'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ))}
+
+          {rows.length === 0 && (
+            <div className="text-center py-12" style={{ color: 'var(--muted)' }}>אין עובדים להצגה</div>
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto rounded-2xl" style={{ border: '1px solid var(--border)' }}>
           {/* Print-only title */}
           <div className="print-title hidden">
             לוח משמרות — {monthLabel(year, month)}
@@ -580,6 +653,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Edit Modal */}

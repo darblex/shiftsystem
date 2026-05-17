@@ -56,8 +56,8 @@ function StatCard({ icon: Icon, label, value, accent, delay }: {
         style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}>
         <Icon className="w-6 h-6" style={{ color: accent }} />
       </div>
-      <div>
-        <p className="text-2xl font-bold text-white">{value}</p>
+      <div className="min-w-0">
+        <p className="text-xl md:text-2xl font-bold text-white truncate">{value}</p>
         <p className="text-sm" style={{ color: 'var(--muted)' }}>{label}</p>
       </div>
     </motion.div>
@@ -158,24 +158,24 @@ export default function ReportsPage() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 app-shell mobile-safe-bottom">
+      <main className="flex-1 app-shell mobile-safe-bottom no-x-scroll">
         <div className="page-grid">
 
           {/* Header */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                 style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
                 <BarChart2 className="w-5 h-5 text-violet-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="section-title">דוחות וסטטיסטיקות</h1>
                 <p className="section-subtitle">ניתוח משמרות ונוכחות</p>
               </div>
             </div>
 
             {/* Month nav */}
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-[46px_minmax(0,1fr)_46px] sm:flex items-center gap-2 w-full lg:w-auto">
               <button onClick={() => router.push('/dashboard')} className="btn-secondary hidden sm:inline-flex">
                 <ArrowRight className="w-4 h-4" /> חזור
               </button>
@@ -183,7 +183,7 @@ export default function ReportsPage() {
                 <LogOut className="w-4 h-4" /> יציאה
               </button>
               <button onClick={prevMonth} className="btn-secondary p-2"><ChevronRight className="w-4 h-4" /></button>
-              <span className="text-sm font-semibold text-white min-w-[120px] text-center">{monthLabel}</span>
+              <span className="text-sm font-semibold text-white text-center truncate px-2">{monthLabel}</span>
               <button onClick={nextMonthFn} className="btn-secondary p-2"><ChevronLeft className="w-4 h-4" /></button>
             </div>
           </motion.div>
@@ -204,15 +204,15 @@ export default function ReportsPage() {
                 const pct = Math.round((count / distTotal) * 100);
                 const color = SHIFT_COLORS[type] ?? '#6b7280';
                 return (
-                  <div key={type} className="flex items-center gap-3">
-                    <span className="text-sm w-24 shrink-0 text-right" style={{ color: 'var(--muted)' }}>{SHIFT_LABELS[type] ?? type}</span>
+                  <div key={type} className="grid grid-cols-[74px_minmax(0,1fr)_54px] sm:grid-cols-[96px_minmax(0,1fr)_64px] items-center gap-2 sm:gap-3">
+                    <span className="text-sm truncate text-right" style={{ color: 'var(--muted)' }}>{SHIFT_LABELS[type] ?? type}</span>
                     <div className="flex-1 h-5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-700"
                         style={{ width: `${pct}%`, background: color }}
                       />
                     </div>
-                    <span className="text-xs font-mono w-12 text-left shrink-0" style={{ color: 'var(--muted)' }}>{count} ({pct}%)</span>
+                    <span className="text-[11px] sm:text-xs font-mono text-left truncate" style={{ color: 'var(--muted)' }}>{count} ({pct}%)</span>
                   </div>
                 );
               })}
@@ -227,9 +227,9 @@ export default function ReportsPage() {
             <h2 className="text-base font-semibold text-white mb-4">עובדים לפי כמות משמרות</h2>
             <div className="flex flex-col gap-3">
               {(data?.shiftsPerEmployee ?? []).map((emp, i) => (
-                <div key={emp.user_id} className="flex items-center gap-3">
+                <div key={emp.user_id} className="grid grid-cols-[24px_minmax(0,90px)_minmax(0,1fr)_34px] sm:grid-cols-[24px_128px_minmax(0,1fr)_34px] items-center gap-2 sm:gap-3">
                   <span className="text-xs font-bold w-5 text-center shrink-0" style={{ color: i < 3 ? '#f59e0b' : 'var(--muted)' }}>{i + 1}</span>
-                  <span className="text-sm font-medium text-white w-32 shrink-0 truncate">{emp.full_name}</span>
+                  <span className="text-sm font-medium text-white truncate">{emp.full_name}</span>
                   <div className="flex-1 h-4 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <div
                       className="h-full rounded-full transition-all duration-700"
@@ -246,9 +246,9 @@ export default function ReportsPage() {
           </motion.div>
 
           {/* Attendance summary */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="data-card p-5 overflow-x-auto">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="data-card p-5 no-x-scroll">
             <h2 className="text-base font-semibold text-white mb-4">נוכחות חודשית</h2>
-            <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <table className="hidden sm:table w-full text-sm" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   <th className="py-2 px-3 text-right font-medium" style={{ color: 'var(--muted)' }}>עובד</th>
@@ -273,6 +273,25 @@ export default function ReportsPage() {
                 )}
               </tbody>
             </table>
+
+            <div className="sm:hidden flex flex-col gap-2">
+              {(data?.attendanceSummary ?? []).map((a) => (
+                <div key={a.user_id} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-white truncate">{a.full_name}</p>
+                    <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(59,130,246,0.15)', color: '#93c5fd' }}>
+                      {a.totalClockIns} כניסות
+                    </span>
+                  </div>
+                  <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                    ממוצע שעות: {a.avgDurationMinutes != null ? `${Math.round(a.avgDurationMinutes / 60 * 10) / 10}h` : '—'}
+                  </p>
+                </div>
+              ))}
+              {(data?.attendanceSummary ?? []).length === 0 && (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>אין נתוני נוכחות לחודש זה</p>
+              )}
+            </div>
           </motion.div>
 
         </div>
