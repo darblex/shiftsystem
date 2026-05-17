@@ -13,6 +13,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  BarChart2,
+  UserCircle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,11 +44,13 @@ export interface SidebarProps {
 }
 
 const DEFAULT_ITEMS: SidebarItem[] = [
-  { href: '/dashboard',  label: 'לוח בקרה',   icon: LayoutDashboard },
-  { href: '/schedule',   label: 'לוח משמרות', icon: CalendarRange },
-  { href: '/duty',       label: 'תורנויות',   icon: ShieldCheck },
-  { href: '/attendance', label: 'נוכחות',     icon: Clock },
-  { href: '/admin',      label: 'ניהול',       icon: Settings, adminOnly: true },
+  { href: '/dashboard',  label: 'לוח בקרה',         icon: LayoutDashboard },
+  { href: '/schedule',   label: 'לוח משמרות',       icon: CalendarRange },
+  { href: '/duty',       label: 'תורנויות',         icon: ShieldCheck },
+  { href: '/attendance', label: 'נוכחות',           icon: Clock },
+  { href: '/reports',    label: 'דוחות',            icon: BarChart2, adminOnly: true },
+  { href: '/profile',    label: 'פרופיל',           icon: UserCircle },
+  { href: '/admin',      label: 'ניהול',             icon: Settings, adminOnly: true },
 ];
 
 function Avatar({ user }: { user?: SidebarUser }) {
@@ -144,7 +148,7 @@ export function Sidebar({ user, isAdmin = false, items, onLogout, className = ''
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ background: 'linear-gradient(135deg, #2563eb, #6366f1)' }}>
                 <CalendarDays className="w-4 h-4" />
               </div>
-              <span className="text-white font-semibold text-sm truncate">לוח משמרות</span>
+              <span className="text-white font-semibold text-sm truncate">מערכת הפניקס</span>
             </motion.div>
           )}
         </AnimatePresence>

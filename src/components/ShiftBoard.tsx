@@ -138,6 +138,7 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [editTarget, setEditTarget] = useState<{ employee: Employee; date: string; entry?: ShiftEntry } | null>(null);
   const [copyTarget, setCopyTarget] = useState<{ userId: number; name: string } | null>(null);
 
@@ -197,10 +198,14 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
     [employees]
   );
 
-  const visibleEmployees = useMemo(
-    () => deptFilter ? employees.filter((e) => e.department === deptFilter) : employees,
-    [employees, deptFilter]
-  );
+  const visibleEmployees = useMemo(() => {
+    let list = deptFilter ? employees.filter((e) => e.department === deptFilter) : employees;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((e) => e.full_name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [employees, deptFilter, searchQuery]);
 
   const rows: EmployeeRow[] = useMemo(() => {
     return visibleEmployees.map((emp) => {
@@ -334,6 +339,16 @@ export default function ShiftBoard({ currentUser, initialYear, initialMonth }: S
             <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Search input */}
+        <input
+          type="text"
+          placeholder="חיפוש עובד..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="form-input py-1.5 text-sm"
+          style={{ width: 'auto', minWidth: 140 }}
+        />
 
         {/* Dept filter */}
         {departments.length > 0 && (

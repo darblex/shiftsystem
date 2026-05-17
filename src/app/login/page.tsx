@@ -63,7 +63,7 @@ export default function LoginPage() {
         >
           <Calendar className="w-8 h-8 text-white" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-white">מערכת ניהול משמרות</h1>
+        <h1 className="text-2xl font-bold text-white">מערכת ניהול משמרות הפניקס</h1>
         <p className="text-sm" style={{ color: 'var(--muted)' }}>ברוכים הבאים — אנא התחברו למערכת</p>
       </motion.div>
 
@@ -139,21 +139,8 @@ export default function LoginPage() {
         </form>
       </motion.div>
 
-      {/* Demo hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="mt-6 w-full max-w-sm relative z-10"
-      >
-        <div className="rounded-xl px-5 py-4 text-sm" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#fbbf24' }}>
-          <p className="font-semibold mb-1">פרטי כניסה לדמו</p>
-          <code className="text-xs rounded px-2 py-0.5" style={{ background: 'rgba(245,158,11,0.15)' }}>admin / Admin123!</code>
-        </div>
-      </motion.div>
-
       <p className="mt-8 text-xs relative z-10" style={{ color: 'var(--muted)' }}>
-        © {new Date().getFullYear()} מערכת ניהול משמרות
+        © {new Date().getFullYear()} מערכת ניהול משמרות הפניקס
       </p>
     </div>
   );

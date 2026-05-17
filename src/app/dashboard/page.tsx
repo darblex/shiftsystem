@@ -324,12 +324,62 @@ export default function DashboardPage() {
             </motion.div>
           </div>
 
+          {/* Upcoming shifts for current user */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} className="data-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white">משמרות הקרובות</h2>
+              <Link href="/schedule" className="text-xs text-blue-400 hover:underline">לוח מלא</Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              {(() => {
+                const start = new Date(todayIso + 'T00:00:00');
+                const cutoff = new Date(start.getTime() + 7 * 86400000);
+                const upcoming = schedule
+                  .filter((e) => e.user_id === user.id && e.shift_type !== 'day_off')
+                  .filter((e) => {
+                    const d = new Date(e.date + 'T00:00:00');
+                    return d >= start && d <= cutoff;
+                  })
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .slice(0, 7);
+                if (upcoming.length === 0) return (
+                  <p className="text-sm text-center py-4" style={{ color: 'var(--muted)' }}>אין משמרות ב-7 הימים הקרובים</p>
+                );
+                const shiftColors: Record<string, string> = { morning: '#f59e0b', afternoon: '#3b82f6', night: '#a855f7', sick: '#ef4444', vacation: '#10b981', holiday: '#ec4899', duty: '#f97316', weekend_duty: '#fb923c' };
+                const shiftLabels: Record<string, string> = { morning: 'בוקר', afternoon: 'אחה"צ', night: 'לילה', sick: 'מחלה', vacation: 'חופשה', holiday: 'חג', duty: 'כוננות', weekend_duty: 'כוננות סופ"ש' };
+                return upcoming.map((e) => {
+                  const color = shiftColors[e.shift_type] ?? '#6b7280';
+                  return (
+                    <div key={e.id} className="flex items-center gap-3 rounded-xl px-4 py-3"
+                      style={{ background: `${color}0d`, border: `1px solid ${color}25` }}>
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white">
+                          {new Date(e.date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </p>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${color}20`, color }}>
+                        {shiftLabels[e.shift_type] ?? e.shift_type}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </motion.div>
+
           {/* Quick actions */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap gap-3">
             <Link href="/schedule" className="btn-primary">
               <CalendarRange className="w-4 h-4" />
               לוח משמרות
             </Link>
+            {user.role === 'employee' && (
+              <Link href="/schedule?view=requests" className="btn-secondary">
+                <ShieldCheck className="w-4 h-4" />
+                הגש בקשה
+              </Link>
+            )}
             <Link href="/duty" className="btn-secondary">
               <ShieldCheck className="w-4 h-4" />
               תורנויות

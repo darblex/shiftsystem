@@ -4,11 +4,11 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'מערכת משמרות',
-  description: 'לוח ניהול משמרות לצוות',
-  applicationName: 'ShiftSystem',
-  authors: [{ name: 'ShiftSystem' }],
-  keywords: ['משמרות', 'לוח עבודה', 'תורנות', 'ניהול עובדים'],
+  title: 'מערכת ניהול משמרות הפניקס',
+  description: 'מערכת ניהול משמרות ונוכחות לצוות הפניקס',
+  applicationName: 'מערכת ניהול משמרות הפניקס',
+  authors: [{ name: 'הפניקס' }],
+  keywords: ['משמרות', 'לוח עבודה', 'תורנות', 'ניהול עובדים', 'הפניקס'],
   robots: 'noindex, nofollow',
 };
 
