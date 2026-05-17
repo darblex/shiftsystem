@@ -65,6 +65,7 @@ function initDb(database: Database.Database) {
     phone          TEXT,
     password_hash  TEXT    NOT NULL,
     active         INTEGER NOT NULL DEFAULT 1,
+    must_change_password INTEGER NOT NULL DEFAULT 0,
     created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
     updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
   );
@@ -259,6 +260,12 @@ function initDb(database: Database.Database) {
   seedUsers(database);
   seedHolidays(database);
 
+  // ── Migration: add must_change_password column if it doesn’t exist ─────────
+  const cols = (database.pragma('table_info(users)') as Array<{ name: string }>).map(c => c.name);
+  if (!cols.includes('must_change_password')) {
+    database.exec('ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0');
+  }
+
   // ── Admin override via env vars (production setup) ─────────────────────────
   // Set ADMIN_USERNAME + ADMIN_PASSWORD env vars to force-update the admin account on startup.
   const adminUsername = process.env.ADMIN_USERNAME;
@@ -315,14 +322,15 @@ export function createUser(data: {
   department?: string;
   phone?: string;
   password_hash: string;
+  must_change_password?: number;
 }): User {
   return db
     .prepare(
-      `INSERT OR IGNORE INTO users (username, email, full_name, role, department, phone, password_hash)
-       VALUES (@username, @email, @full_name, @role, @department, @phone, @password_hash)
-       RETURNING id, username, email, full_name, role, department, phone, active, created_at, updated_at`
+      `INSERT OR IGNORE INTO users (username, email, full_name, role, department, phone, password_hash, must_change_password)
+       VALUES (@username, @email, @full_name, @role, @department, @phone, @password_hash, @must_change_password)
+       RETURNING id, username, email, full_name, role, department, phone, active, must_change_password, created_at, updated_at`
     )
-    .get(data) as User;
+    .get({ ...data, must_change_password: data.must_change_password ?? 0 }) as User;
 }
 
 export function updateUser(

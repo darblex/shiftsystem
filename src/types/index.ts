@@ -32,6 +32,7 @@ export interface User {
   department?: string;
   phone?: string;
   active: number;
+  must_change_password?: number;
   created_at: string;
   updated_at: string;
 }

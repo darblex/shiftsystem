@@ -32,6 +32,10 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      if (data?.must_change_password) {
+        router.push('/change-password');
+        return;
+      }
       const dest = data?.user?.role === 'admin' ? '/admin' : '/dashboard';
       router.push(dest);
     } catch {

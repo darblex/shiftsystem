@@ -112,6 +112,7 @@ export const POST = requireAuth(
       department: department ?? undefined,
       phone: phone ?? undefined,
       password_hash: passwordHash,
+      must_change_password: 1,
     });
 
     return NextResponse.json({ employee: newUser }, { status: 201 });

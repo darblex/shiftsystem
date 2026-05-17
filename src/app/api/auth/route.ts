@@ -100,7 +100,12 @@ export async function POST(req: NextRequest) {
   const { password_hash, ...user } = userWithHash;
   const token = signToken(user);
 
-  const res = NextResponse.json({ user, role: user.role, authenticated: true });
+  const res = NextResponse.json({
+    user,
+    role: user.role,
+    authenticated: true,
+    must_change_password: !!(user as any).must_change_password,
+  });
   res.headers.set('Set-Cookie', buildAuthCookieValue(token));
   return res;
 }
@@ -164,7 +169,7 @@ export async function PATCH(req: NextRequest) {
   const newHash = await hashPassword(String(newPassword));
 
   const { db } = await import('@/lib/db');
-  db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(
+  db.prepare("UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = datetime('now') WHERE id = ?").run(
     newHash,
     user.id
   );
