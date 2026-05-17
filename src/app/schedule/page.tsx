@@ -3,21 +3,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2, ArrowRight } from 'lucide-react';
+import { CalendarRange, LayoutGrid, Loader2, LogOut, ArrowLeftRight, BarChart2, ArrowRight, SlidersHorizontal } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ShiftBoard from '@/components/ShiftBoard';
 import WeekView from '@/components/WeekView';
 import SwapRequests from '@/components/SwapRequests';
 import MonthlySummary from '@/components/MonthlySummary';
+import MyConstraints from '@/components/MyConstraints';
 
 interface CurrentUser {
   id: number;
+  username: string;
   full_name: string;
   email: string;
   role: 'admin' | 'manager' | 'employee';
+  active: number;
+  created_at: string;
+  updated_at: string;
 }
 
-type ViewMode = 'monthly' | 'weekly' | 'requests' | 'summary';
+type ViewMode = 'monthly' | 'weekly' | 'constraints' | 'summary';
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -76,10 +81,10 @@ export default function SchedulePage() {
               {/* View toggle */}
               <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
                 {([
-                  { key: 'monthly',  label: 'חודשי',   icon: LayoutGrid },
-                  { key: 'weekly',   label: 'שבועי',   icon: CalendarRange },
-                  { key: 'requests', label: 'בקשות',   icon: ArrowLeftRight },
-                  { key: 'summary',  label: 'סיכום',    icon: BarChart2 },
+                  { key: 'monthly',     label: 'חודשי',     icon: LayoutGrid },
+                  { key: 'weekly',      label: 'שבועי',     icon: CalendarRange },
+                  { key: 'constraints', label: 'אילוצים',   icon: SlidersHorizontal },
+                  { key: 'summary',     label: 'סיכום',      icon: BarChart2 },
                 ] as const).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -116,8 +121,8 @@ export default function SchedulePage() {
               <ShiftBoard currentUser={user} />
             ) : view === 'weekly' ? (
               <WeekView currentUser={user} />
-            ) : view === 'requests' ? (
-              <SwapRequests currentUser={user} />
+            ) : view === 'constraints' ? (
+              <MyConstraints currentUser={user} />
             ) : (
               <MonthlySummary />
             )}
