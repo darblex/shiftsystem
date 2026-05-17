@@ -202,7 +202,7 @@ export const PATCH = requireAuth(async (req, { user }) => {
     }
     const newHash = await hashPassword(password);
     db.prepare(
-      "UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?"
+      "UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = datetime('now') WHERE id = ?"
     ).run(newHash, id);
   }
 
