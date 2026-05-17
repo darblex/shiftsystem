@@ -279,6 +279,25 @@ function initDb(database: Database.Database) {
       database.prepare(`INSERT INTO users (username, email, full_name, role, department, password_hash) VALUES (?, ?, ?, 'admin', 'ניהול', ?)`).run(adminUsername, `${adminUsername}@phoenix.local`, 'מנהל ראשי', hash);
     }
   }
+
+  // ── Phoenix team seed ──────────────────────────────────────────
+  // These users are created on every startup if they don’t exist yet.
+  // They will NOT be overwritten if they already exist (INSERT OR IGNORE).
+  const teamMembers = [
+    { username: 'Ofer',   email: 'ofer@phoenix.local',   full_name: 'עופר' },
+    { username: 'Yoav',   email: 'yoav@phoenix.local',   full_name: 'יואב' },
+    { username: 'Nikol',  email: 'nikol@phoenix.local',  full_name: 'ניקול' },
+    { username: 'Daniel', email: 'daniel@phoenix.local', full_name: 'דניאל' },
+    { username: 'Tamir',  email: 'tamir@phoenix.local',  full_name: 'תמיר' },
+  ];
+  const defaultHash = bcrypt.hashSync('Pass1234', 12);
+  const insertTeam = database.prepare(`
+    INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash, must_change_password)
+    VALUES (?, ?, ?, 'employee', 'צוות סיסטם', ?, 1)
+  `);
+  for (const m of teamMembers) {
+    insertTeam.run(m.username, m.email, m.full_name, defaultHash);
+  }
 }
 
 // Export db as lazy singleton
