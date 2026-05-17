@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 401 });
   }
 
-  return NextResponse.json({ user, role: user.role, authenticated: true });
+  return NextResponse.json({ user, role: user.role, authenticated: true, must_change_password: !!(user as any).must_change_password });
 }
 
 // POST /api/auth — login with username + password

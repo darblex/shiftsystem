@@ -17,14 +17,14 @@ export default function ChangePasswordPage() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    // Verify user is logged in
     fetch('/api/auth', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) { router.push('/login'); return; }
         setUserName(data.user?.full_name || data.user?.username || '');
-        // If no need to change password, redirect to dashboard
-        if (!data.must_change_password && !data.user?.must_change_password) {
+        // Only redirect to dashboard if user genuinely doesn't need to change password
+        const needsChange = data.must_change_password || data.user?.must_change_password;
+        if (!needsChange) {
           router.push('/dashboard');
         }
       })

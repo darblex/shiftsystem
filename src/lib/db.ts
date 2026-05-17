@@ -293,7 +293,7 @@ export const db: Database.Database = new Proxy({} as Database.Database, {
 export function getUserById(id: number): User | undefined {
   return db
     .prepare(
-      `SELECT id, username, email, full_name, role, department, phone, active, created_at, updated_at
+      `SELECT id, username, email, full_name, role, department, phone, active, must_change_password, created_at, updated_at
        FROM users WHERE id = ?`
     )
     .get(id) as User | undefined;
@@ -308,7 +308,7 @@ export function getUserByUsername(username: string): UserWithHash | undefined {
 export function getAllActiveUsers(): User[] {
   return db
     .prepare(
-      `SELECT id, username, email, full_name, role, department, phone, active, created_at, updated_at
+      `SELECT id, username, email, full_name, role, department, phone, active, must_change_password, created_at, updated_at
        FROM users WHERE active = 1 ORDER BY full_name`
     )
     .all() as User[];
