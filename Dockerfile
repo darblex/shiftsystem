@@ -44,6 +44,9 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Always point DB at the mounted volume
+ENV DATABASE_DIR=/data
+
 # Runtime env vars expected:
 #   JWT_SECRET    — secret string for signing JWT tokens
 #   DATABASE_URL  — path or connection string for SQLite/Postgres
