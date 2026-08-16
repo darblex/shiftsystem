@@ -757,24 +757,27 @@ export function getPushSubscriptionsForUser(userId: number): PushSubscriptionRow
 // ── Attendance helpers ────────────────────────────────────────────────────────
 
 export function getAttendanceForUser(userId: number, year: number, month: number): AttendanceRecord[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [start, end] = monthDateRange(year, month);
   return db
     .prepare(
-      `SELECT * FROM attendance_records WHERE user_id = ? AND date LIKE ? ORDER BY date DESC`
+      `SELECT * FROM attendance_records
+       WHERE user_id = ? AND date >= ? AND date < ?
+       ORDER BY date DESC`
     )
-    .all(userId, `${prefix}%`) as AttendanceRecord[];
+    .all(userId, start, end) as AttendanceRecord[];
 }
 
 export function getAllAttendanceForMonth(year: number, month: number): AttendanceRecord[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [start, end] = monthDateRange(year, month);
   return db
     .prepare(
       `SELECT a.*, u.full_name
        FROM attendance_records a
        JOIN users u ON u.id = a.user_id
-       WHERE a.date LIKE ? ORDER BY a.date DESC, u.full_name`
+       WHERE a.date >= ? AND a.date < ?
+       ORDER BY a.date DESC, u.full_name`
     )
-    .all(`${prefix}%`) as AttendanceRecord[];
+    .all(start, end) as AttendanceRecord[];
 }
 
 export function getTodayAttendance(userId: number, today: string): AttendanceRecord | undefined {
