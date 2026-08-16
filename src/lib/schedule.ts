@@ -41,6 +41,13 @@ function datesInMonth(year: number, month: number): Date[] {
   return dates;
 }
 
+function monthDateRange(year: number, month: number): [string, string] {
+  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  return [start, `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`];
+}
+
 // ── Main generation function ──────────────────────────────────────────────────
 
 const SHIFT_ROTATION: Array<'morning' | 'afternoon' | 'night'> = ['morning', 'afternoon', 'night'];
@@ -65,11 +72,11 @@ export async function generateMonthSchedule(
 
   if (targetUsers.length === 0) return [];
 
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [monthStart, monthEnd] = monthDateRange(year, month);
 
   if (overwrite) {
-    db.prepare(`DELETE FROM shifts WHERE date LIKE ?`).run(`${prefix}%`);
-    db.prepare(`DELETE FROM duty_assignments WHERE date LIKE ?`).run(`${prefix}%`);
+    db.prepare(`DELETE FROM shifts WHERE date >= ? AND date < ?`).run(monthStart, monthEnd);
+    db.prepare(`DELETE FROM duty_assignments WHERE date >= ? AND date < ?`).run(monthStart, monthEnd);
   }
 
   const allDates = datesInMonth(year, month);
@@ -92,7 +99,7 @@ export async function generateMonthSchedule(
       WHERE duty_type = 'weekend' AND date < ?
       GROUP BY employee_id
       ORDER BY last_date ASC
-    `).all(`${prefix}-01`) as Array<{ employee_id: number; last_date: string }>;
+    `).all(monthStart) as Array<{ employee_id: number; last_date: string }>;
 
     const lastDutyByUser = new Map(lastDuties.map((r) => [r.employee_id, r.last_date]));
     const orderedUsers = [...targetUsers].sort((a, b) => {
@@ -261,6 +268,7 @@ export interface ShiftDayStat {
 }
 
 export function getShiftDayStats(year: number, month: number): ShiftDayStat[] {
+  const [start, end] = monthDateRange(year, month);
   return db
     .prepare(
       `SELECT
@@ -270,11 +278,11 @@ export function getShiftDayStats(year: number, month: number): ShiftDayStat[] {
          SUM(CASE WHEN shift_type = 'night'     THEN 1 ELSE 0 END) AS nightCount,
          COUNT(DISTINCT user_id) AS totalEmployees
        FROM shifts
-       WHERE date LIKE ?
+       WHERE date >= ? AND date < ?
        GROUP BY date
        ORDER BY date`
     )
-    .all(`${year}-${String(month).padStart(2, '0')}%`) as ShiftDayStat[];
+    .all(start, end) as ShiftDayStat[];
 }
 
 export function getUpcomingDuty(fromDate?: string): Array<{ date: string; employee_name: string; duty_type: string }> {
