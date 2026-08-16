@@ -454,15 +454,16 @@ export function copyShiftsToMonth(
   toYear: number,
   toMonth: number
 ): number {
-  const fromPrefix = `${fromYear}-${String(fromMonth).padStart(2, '0')}`;
+  const [fromStart, fromEnd] = monthDateRange(fromYear, fromMonth);
   const toPrefix = `${toYear}-${String(toMonth).padStart(2, '0')}`;
 
   // Get source shifts
   const sourceShifts = db
     .prepare(
-      `SELECT * FROM shifts WHERE user_id = ? AND date LIKE ? AND shift_type != 'holiday'`
+      `SELECT * FROM shifts
+       WHERE user_id = ? AND date >= ? AND date < ? AND shift_type != 'holiday'`
     )
-    .all(userId, `${fromPrefix}%`) as ShiftEntry[];
+    .all(userId, fromStart, fromEnd) as ShiftEntry[];
 
   if (sourceShifts.length === 0) return 0;
 
@@ -532,15 +533,15 @@ export function upsertConstraints(data: Omit<ConstraintRecord, 'id' | 'created_a
 // ── Duty helpers ──────────────────────────────────────────────────────────────
 
 export function getDutyAssignmentsForMonth(year: number, month: number): DutyAssignment[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [start, end] = monthDateRange(year, month);
   return db
     .prepare(
       `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
        FROM duty_assignments d
        JOIN users u ON u.id = d.employee_id
-       WHERE d.date LIKE ? ORDER BY d.date`
+       WHERE d.date >= ? AND d.date < ? ORDER BY d.date`
     )
-    .all(`${prefix}%`) as DutyAssignment[];
+    .all(start, end) as DutyAssignment[];
 }
 
 export function upsertDutyAssignment(data: {
@@ -818,10 +819,10 @@ export function clockOut(userId: number, date: string, clockOut: string): Attend
 
 export function getHolidaysFromDB(year: number, month?: number): Holiday[] {
   if (month !== undefined) {
-    const prefix = `${year}-${String(month).padStart(2, '0')}`;
+    const [start, end] = monthDateRange(year, month);
     return db
-      .prepare(`SELECT * FROM holidays WHERE date LIKE ? ORDER BY date`)
-      .all(`${prefix}%`) as Holiday[];
+      .prepare(`SELECT * FROM holidays WHERE date >= ? AND date < ? ORDER BY date`)
+      .all(start, end) as Holiday[];
   }
   return db
     .prepare(`SELECT * FROM holidays WHERE year = ? ORDER BY date`)
