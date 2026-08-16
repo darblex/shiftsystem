@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getAllActiveUsers, getAllShiftsForMonth } from '@/lib/db';
+import { parseMonth, parseYear } from '@/lib/validation';
 import type { ShiftType } from '@/types';
 
 const SHIFT_LABEL: Record<ShiftType, string> = {
@@ -30,10 +31,11 @@ export const GET = requireAuth(async (req, { user }) => {
   }
 
   const { searchParams } = new URL(req.url);
-  const year = parseInt(searchParams.get('year') ?? String(new Date().getFullYear()));
-  const month = parseInt(searchParams.get('month') ?? String(new Date().getMonth() + 1));
+  const now = new Date();
+  const year = parseYear(searchParams.get('year') ?? now.getFullYear());
+  const month = parseMonth(searchParams.get('month') ?? now.getMonth() + 1);
 
-  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+  if (!year || !month) {
     return NextResponse.json({ error: 'פרמטרים לא תקינים' }, { status: 400 });
   }
 
@@ -41,9 +43,17 @@ export const GET = requireAuth(async (req, { user }) => {
   const shifts = getAllShiftsForMonth(year, month);
   const daysInMonth = getDaysInMonth(year, month);
 
+  // Bucket once instead of scanning the whole month for every employee.
+  const shiftsByUser = new Map<number, typeof shifts>();
+  for (const shift of shifts) {
+    const bucket = shiftsByUser.get(shift.user_id);
+    if (bucket) bucket.push(shift);
+    else shiftsByUser.set(shift.user_id, [shift]);
+  }
+
   // Per-employee summary
   const employeeSummaries = users.map(u => {
-    const myShifts = shifts.filter(s => s.user_id === u.id);
+    const myShifts = shiftsByUser.get(u.id) ?? [];
     const counts: Partial<Record<ShiftType, number>> = {};
     for (const s of myShifts) {
       counts[s.shift_type] = (counts[s.shift_type] ?? 0) + 1;

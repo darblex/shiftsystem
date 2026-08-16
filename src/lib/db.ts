@@ -379,29 +379,37 @@ export function updateUser(
 
 // ── Shift helpers ─────────────────────────────────────────────────────────────
 
+function monthDateRange(year: number, month: number): [string, string] {
+  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const end = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+  return [start, end];
+}
+
 export function getShiftsForMonth(year: number, month: number, userId?: number): ShiftEntry[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [start, end] = monthDateRange(year, month);
   if (userId !== undefined) {
     return db
-      .prepare(`SELECT * FROM shifts WHERE user_id = ? AND date LIKE ? ORDER BY date`)
-      .all(userId, `${prefix}%`) as ShiftEntry[];
+      .prepare(`SELECT * FROM shifts WHERE user_id = ? AND date >= ? AND date < ? ORDER BY date`)
+      .all(userId, start, end) as ShiftEntry[];
   }
   return db
-    .prepare(`SELECT * FROM shifts WHERE date LIKE ? ORDER BY date`)
-    .all(`${prefix}%`) as ShiftEntry[];
+    .prepare(`SELECT * FROM shifts WHERE date >= ? AND date < ? ORDER BY date`)
+    .all(start, end) as ShiftEntry[];
 }
 
 export function getAllShiftsForMonth(year: number, month: number): ShiftEntry[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const [start, end] = monthDateRange(year, month);
   return db
     .prepare(
       `SELECT s.*, u.full_name, u.department
        FROM shifts s
        JOIN users u ON u.id = s.user_id
-       WHERE s.date LIKE ?
+       WHERE s.date >= ? AND s.date < ?
        ORDER BY s.date, u.full_name`
     )
-    .all(`${prefix}%`) as ShiftEntry[];
+    .all(start, end) as ShiftEntry[];
 }
 
 export function upsertShift(entry: Omit<ShiftEntry, 'id' | 'created_at'>): ShiftEntry {
