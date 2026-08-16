@@ -133,7 +133,7 @@ function ClockCard({
           <p className="text-sm font-semibold text-white">{formatTime(today?.clock_out)}</p>
         </div>
         <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--muted)' }}>סה"כ</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--muted)' }}>סה״כ</p>
           <p className="text-sm font-semibold text-white">{formatDuration(today?.duration_minutes)}</p>
         </div>
       </div>
@@ -154,12 +154,12 @@ function ClockCard({
           ) : isClockedIn ? (
             <>
               <LogOut className="w-4 h-4" />
-              <span>צ'ק-אאוט</span>
+              <span>צ׳ק-אאוט</span>
             </>
           ) : (
             <>
               <LogIn className="w-4 h-4" />
-              <span>צ'ק-אין</span>
+              <span>צ׳ק-אין</span>
             </>
           )}
         </button>

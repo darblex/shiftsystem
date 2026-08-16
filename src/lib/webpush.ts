@@ -7,13 +7,11 @@
 
 import { getSetting, setSetting, getPushSubscriptionsForUser } from './db';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wp: any = null;
 
 function getWebPush() {
   if (wp) return wp;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     wp = require('web-push');
     return wp;
   } catch {

@@ -125,7 +125,7 @@ export default function MonthlySummary() {
         {[
           { icon: Users2, label: 'עובדים', value: data.totalEmployees, color: '#3b82f6' },
           { icon: CalendarDays, label: 'ימים בחודש', value: data.daysInMonth, color: '#a855f7' },
-          { icon: BarChart2, label: 'סה"כ משמרות', value: data.globalCounts['morning'] ?? 0 + (data.globalCounts['afternoon'] ?? 0) + (data.globalCounts['night'] ?? 0), color: '#f59e0b' },
+          { icon: BarChart2, label: 'סה"כ משמרות', value: (data.globalCounts['morning'] ?? 0) + (data.globalCounts['afternoon'] ?? 0) + (data.globalCounts['night'] ?? 0), color: '#f59e0b' },
           { icon: CalendarDays, label: 'ימי מחלה/חופש', value: (data.globalCounts['sick'] ?? 0) + (data.globalCounts['vacation'] ?? 0) + (data.globalCounts['day_off'] ?? 0), color: '#ef4444' },
         ].map(({ icon: Icon, label, value, color }, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -234,7 +234,7 @@ export default function MonthlySummary() {
                     {data.shiftLabel[s]}
                   </th>
                 ))}
-                <th className="px-3 py-2.5 font-bold text-center text-white whitespace-nowrap">סה"כ עבודה</th>
+                <th className="px-3 py-2.5 font-bold text-center text-white whitespace-nowrap">סה״כ עבודה</th>
               </tr>
             </thead>
             <tbody>

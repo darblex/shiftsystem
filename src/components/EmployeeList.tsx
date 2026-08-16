@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Shield, UserMinus, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -61,9 +62,12 @@ function Avatar({ name, url, size = 10 }: { name: string; url?: string; size?: n
 
   if (url) {
     return (
-      <img
+      <Image
         src={url}
         alt={name}
+        width={size * 4}
+        height={size * 4}
+        unoptimized
         className={`w-${size} h-${size} rounded-full object-cover ring-2 ring-white/10`}
       />
     );
@@ -233,7 +237,6 @@ export function EmployeeList({
     else { setSortField(field); setSortDir('asc'); }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-shadow
   function setDirection(d: 'asc' | 'desc') { setSortDir(d); }
 
   const SortIcon = ({ field }: { field: typeof sortField }) =>

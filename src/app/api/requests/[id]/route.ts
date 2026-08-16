@@ -14,8 +14,8 @@ type MutableStatus = Extract<ShiftRequest['status'], 'approved' | 'rejected' | '
 
 const MUTABLE_STATUSES: MutableStatus[] = ['approved', 'rejected', 'cancelled'];
 
-export const PUT = requireAuth(async (req, { user }, context: { params: { id: string } }) => {
-  const requestId = parsePositiveInt(context.params.id);
+export const PUT = requireAuth(async (req, { user }, context: { params: Promise<{ id: string }> }) => {
+  const requestId = parsePositiveInt((await context.params).id);
   if (!requestId) {
     return NextResponse.json({ error: 'מזהה בקשה לא תקין' }, { status: 400 });
   }

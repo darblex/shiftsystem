@@ -73,4 +73,4 @@ export const GET = requireAuth(async (req: NextRequest) => {
     attendanceSummary,
     topWorkers,
   });
-});
+}, ['admin', 'manager']);

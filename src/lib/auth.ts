@@ -132,9 +132,9 @@ export function extractTokenFromRequest(req: NextRequest): string | null {
  * Reads the auth token from the Next.js `cookies()` store (Server Components).
  * Returns the raw token string or null.
  */
-export function getTokenFromCookies(): string | null {
+export async function getTokenFromCookies(): Promise<string | null> {
   try {
-    return cookies().get(COOKIE_NAME)?.value ?? null;
+    return (await cookies()).get(COOKIE_NAME)?.value ?? null;
   } catch {
     return null;
   }
@@ -182,7 +182,7 @@ export async function getCurrentUserFromRequest(req: NextRequest): Promise<User 
  * Returns User or null.
  */
 export async function getCurrentUser(): Promise<User | null> {
-  const token = getTokenFromCookies();
+  const token = await getTokenFromCookies();
   if (!token) return null;
 
   const payload = verifyToken(token);
@@ -199,7 +199,6 @@ export async function getCurrentUser(): Promise<User | null> {
 type RouteHandler = (
   req: NextRequest,
   context: { user: User; payload: JwtPayload },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ...rest: any[]
 ) => Promise<NextResponse> | NextResponse;
 
@@ -243,6 +242,13 @@ export function requireAuth(
       return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 401 });
     }
 
+    if (user.must_change_password) {
+      return NextResponse.json(
+        { error: 'יש להחליף סיסמה לפני השימוש במערכת', must_change_password: true },
+        { status: 403 }
+      );
+    }
+
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
@@ -267,7 +273,6 @@ export async function loginWithCredentials(
   const valid = await verifyPassword(password, userWithHash.password_hash);
   if (!valid) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password_hash, ...user } = userWithHash;
   const token = signToken(user);
 

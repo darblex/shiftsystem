@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -59,7 +60,7 @@ function Avatar({ user }: { user?: SidebarUser }) {
   return (
     <div className="relative w-9 h-9 shrink-0">
       {user?.avatarUrl ? (
-        <img src={user.avatarUrl} alt={user.name} className="w-full h-full rounded-full object-cover" />
+        <Image src={user.avatarUrl} alt={user.name} width={36} height={36} unoptimized className="w-full h-full rounded-full object-cover" />
       ) : (
         <div
           className="w-full h-full rounded-full flex items-center justify-center text-white text-sm font-bold"

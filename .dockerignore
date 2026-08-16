@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+data
+*.db
+*.db-*
+.env
+.env.*
+npm-debug.log*
+docs/agent-runs

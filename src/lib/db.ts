@@ -27,11 +27,11 @@ if (!fs.existsSync(DATA_DIR)) {
 const DB_PATH = path.join(DATA_DIR, 'shiftsystem.db');
 const DEMO_SEED_ENABLED =
   process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_SEED === 'true';
+const TEAM_SEED_ENABLED = DEMO_SEED_ENABLED || process.env.ENABLE_TEAM_SEED === 'true';
 
 // ── Singleton (works with Next.js hot reload in dev) ─────────────────────────
 
 declare global {
-  // eslint-disable-next-line no-var
   var __db: Database.Database | undefined;
 }
 
@@ -281,22 +281,29 @@ function initDb(database: Database.Database) {
   }
 
   // ── Phoenix team seed ──────────────────────────────────────────
-  // These users are created on every startup if they don’t exist yet.
-  // They will NOT be overwritten if they already exist (INSERT OR IGNORE).
-  const teamMembers = [
-    { username: 'Ofer',   email: 'ofer@phoenix.local',   full_name: 'עופר' },
-    { username: 'Yoav',   email: 'yoav@phoenix.local',   full_name: 'יואב' },
-    { username: 'Nikol',  email: 'nikol@phoenix.local',  full_name: 'ניקול' },
-    { username: 'Daniel', email: 'daniel@phoenix.local', full_name: 'דניאל' },
-    { username: 'Tamir',  email: 'tamir@phoenix.local',  full_name: 'תמיר' },
-  ];
-  const defaultHash = bcrypt.hashSync('Pass1234', 12);
-  const insertTeam = database.prepare(`
-    INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash, must_change_password)
-    VALUES (?, ?, ?, 'employee', 'צוות סיסטם', ?, 1)
-  `);
-  for (const m of teamMembers) {
-    insertTeam.run(m.username, m.email, m.full_name, defaultHash);
+  // Never create predictable-password accounts in production unless an
+  // operator explicitly opts in. Existing temporary accounts remain forced
+  // through the password-change flow by requireAuth.
+  if (TEAM_SEED_ENABLED) {
+    const teamMembers = [
+      { username: 'Ofer',   email: 'ofer@phoenix.local',   full_name: 'עופר' },
+      { username: 'Yoav',   email: 'yoav@phoenix.local',   full_name: 'יואב' },
+      { username: 'Nikol',  email: 'nikol@phoenix.local',  full_name: 'ניקול' },
+      { username: 'Daniel', email: 'daniel@phoenix.local', full_name: 'דניאל' },
+      { username: 'Tamir',  email: 'tamir@phoenix.local',  full_name: 'תמיר' },
+    ];
+    const findTeamMember = database.prepare('SELECT 1 FROM users WHERE username = ?');
+    const missingTeamMembers = teamMembers.filter(({ username }) => !findTeamMember.get(username));
+    if (missingTeamMembers.length) {
+      const defaultHash = bcrypt.hashSync('Pass1234', 12);
+      const insertTeam = database.prepare(`
+        INSERT OR IGNORE INTO users (username, email, full_name, role, department, password_hash, must_change_password)
+        VALUES (?, ?, ?, 'employee', 'צוות סיסטם', ?, 1)
+      `);
+      for (const member of missingTeamMembers) {
+        insertTeam.run(member.username, member.email, member.full_name, defaultHash);
+      }
+    }
   }
 }
 
@@ -722,12 +729,17 @@ export function savePushSubscription(
   db.prepare(`
     INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
     VALUES (?, ?, ?, ?)
-    ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth
+    ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth
+    WHERE push_subscriptions.user_id = excluded.user_id
   `).run(userId, endpoint, p256dh, auth);
 }
 
-export function removePushSubscription(endpoint: string): void {
-  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(endpoint);
+export function removePushSubscription(endpoint: string, userId?: number): void {
+  if (userId === undefined) {
+    db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(endpoint);
+    return;
+  }
+  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(endpoint, userId);
 }
 
 export function getPushSubscriptionsForUser(userId: number): PushSubscriptionRow[] {

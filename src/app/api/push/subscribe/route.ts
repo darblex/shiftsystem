@@ -5,6 +5,19 @@ import { requireAuth } from '@/lib/auth';
 import { savePushSubscription, removePushSubscription } from '@/lib/db';
 import { parseJsonObject } from '@/lib/validation';
 
+function validEndpoint(value: string): boolean {
+  if (value.length > 2048) return false;
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function validPushKey(value: string): boolean {
+  return value.length >= 16 && value.length <= 512 && /^[A-Za-z0-9_-]+$/.test(value);
+}
+
 // POST /api/push/subscribe — save a push subscription for the current user
 export const POST = requireAuth(async (req, { user }) => {
   let body: unknown;
@@ -22,7 +35,7 @@ export const POST = requireAuth(async (req, { user }) => {
   const p256dh = typeof keys?.p256dh === 'string' ? keys.p256dh.trim() : null;
   const auth = typeof keys?.auth === 'string' ? keys.auth.trim() : null;
 
-  if (!endpoint || !p256dh || !auth) {
+  if (!endpoint || !p256dh || !auth || !validEndpoint(endpoint) || !validPushKey(p256dh) || !validPushKey(auth)) {
     return NextResponse.json({ error: 'נתוני מנוי חסרים' }, { status: 400 });
   }
 
@@ -31,11 +44,11 @@ export const POST = requireAuth(async (req, { user }) => {
 });
 
 // DELETE /api/push/subscribe?endpoint=... — remove a subscription
-export const DELETE = requireAuth(async (req) => {
+export const DELETE = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get('endpoint');
-  if (!endpoint) return NextResponse.json({ error: 'חסר endpoint' }, { status: 400 });
+  if (!endpoint || !validEndpoint(endpoint)) return NextResponse.json({ error: 'חסר endpoint' }, { status: 400 });
 
-  removePushSubscription(decodeURIComponent(endpoint));
+  removePushSubscription(endpoint, user.id);
   return NextResponse.json({ success: true });
 });
