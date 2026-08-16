@@ -179,20 +179,24 @@ function ClockCard({
 function RecordRow({ record, showName }: { record: AttendanceRecord; showName: boolean }) {
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 rounded-xl"
+      className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-3 rounded-xl min-w-0"
       style={{ background: 'rgba(255,255,255,0.03)' }}
     >
-      <div className="text-sm font-medium text-white min-w-[90px]">{formatDateHe(record.date)}</div>
-      {showName && (
-        <div className="text-sm min-w-[100px] truncate" style={{ color: 'var(--muted)' }}>
-          {record.full_name ?? '—'}
-        </div>
-      )}
-      <div className="text-sm text-emerald-400 min-w-[52px]">{formatTime(record.clock_in)}</div>
-      <div className="text-sm min-w-[52px]" style={{ color: record.clock_out ? '#fbbf24' : 'var(--muted)' }}>
+      <div className="min-w-0 flex-1 sm:flex-none sm:flex sm:items-center sm:gap-4">
+        <div className="text-sm font-medium text-white truncate sm:min-w-[90px]">{formatDateHe(record.date)}</div>
+        {showName && (
+          <div className="text-xs sm:text-sm truncate sm:min-w-[100px]" style={{ color: 'var(--muted)' }}>
+            {record.full_name ?? '—'}
+          </div>
+        )}
+      </div>
+      <div className="text-xs sm:text-sm text-emerald-400 tabular-nums sm:min-w-[52px]" aria-label={`כניסה ${formatTime(record.clock_in)}`}>
+        {formatTime(record.clock_in)}
+      </div>
+      <div className="text-xs sm:text-sm tabular-nums sm:min-w-[52px]" style={{ color: record.clock_out ? '#fbbf24' : 'var(--muted)' }} aria-label={`יציאה ${formatTime(record.clock_out)}`}>
         {formatTime(record.clock_out)}
       </div>
-      <div className="mr-auto text-sm font-semibold" style={{ color: '#818cf8' }}>
+      <div className="text-xs sm:text-sm font-semibold tabular-nums sm:mr-auto" style={{ color: '#818cf8' }} aria-label={`משך ${formatDuration(record.duration_minutes)}`}>
         {formatDuration(record.duration_minutes)}
       </div>
     </div>
@@ -323,6 +327,7 @@ export default function AttendancePage() {
               </button>
               <button
                 onClick={prevMonth}
+                aria-label="החודש הקודם"
                 className="w-11 h-11 rounded-2xl flex items-center justify-center transition-colors hover:bg-white/10"
                 style={{ color: 'var(--muted)', border: '1px solid var(--border)', background: 'var(--bg-card)' }}
               >
@@ -332,6 +337,7 @@ export default function AttendancePage() {
               <button
                 onClick={nextMonth}
                 disabled={isCurrentMonth}
+                aria-label="החודש הבא"
                 className="w-11 h-11 rounded-2xl flex items-center justify-center transition-colors hover:bg-white/10 disabled:opacity-30"
                 style={{ color: 'var(--muted)', border: '1px solid var(--border)', background: 'var(--bg-card)' }}
               >
@@ -413,7 +419,7 @@ export default function AttendancePage() {
               <div className="flex flex-col gap-2">
                 {/* Column headers */}
                 <div
-                  className="flex items-center gap-4 px-4 py-2 text-xs font-medium"
+                  className="hidden sm:flex items-center gap-4 px-4 py-2 text-xs font-medium"
                   style={{ color: 'var(--muted)' }}
                 >
                   <span className="min-w-[90px]">תאריך</span>
