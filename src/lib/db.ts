@@ -21,7 +21,7 @@ import type {
 // ── Database path ────────────────────────────────────────────────────────────
 
 const DATA_DIR = process.env.DATABASE_DIR || path.join(process.cwd(), 'data');
-if (!fs.existsSync(DATA_DIR)) {
+if (!fs.existsSync(/* turbopackIgnore: true */ DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 const DB_PATH = path.join(DATA_DIR, 'shiftsystem.db');
