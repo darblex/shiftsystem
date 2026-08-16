@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { parseMonth, parseYear } from '@/lib/validation';
 
 export const GET = requireAuth(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const now = new Date();
-  const year = parseInt(searchParams.get('year') ?? String(now.getFullYear()), 10);
-  const month = parseInt(searchParams.get('month') ?? String(now.getMonth() + 1), 10);
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  const year = parseYear(searchParams.get('year') ?? now.getFullYear());
+  const month = parseMonth(searchParams.get('month') ?? now.getMonth() + 1);
+  if (!year || !month) {
+    return NextResponse.json({ error: 'פרמטרים לא תקינים' }, { status: 400 });
+  }
+  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const end = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
 
   // shifts per employee
   const shiftsPerEmployee = db.prepare(`
@@ -24,10 +31,10 @@ export const GET = requireAuth(async (req: NextRequest) => {
       SUM(CASE WHEN s.shift_type = 'holiday' THEN 1 ELSE 0 END) AS holiday
     FROM shifts s
     JOIN users u ON u.id = s.user_id
-    WHERE s.date LIKE ? AND u.active = 1
+    WHERE s.date >= ? AND s.date < ? AND u.active = 1
     GROUP BY u.id, u.full_name
     ORDER BY total DESC
-  `).all(`${prefix}%`) as Array<{
+  `).all(start, end) as Array<{
     user_id: number; full_name: string; total: number;
     morning: number; afternoon: number; night: number;
     day_off: number; sick: number; vacation: number; holiday: number;
@@ -37,9 +44,9 @@ export const GET = requireAuth(async (req: NextRequest) => {
   const distRows = db.prepare(`
     SELECT shift_type, COUNT(*) AS cnt
     FROM shifts
-    WHERE date LIKE ?
+    WHERE date >= ? AND date < ?
     GROUP BY shift_type
-  `).all(`${prefix}%`) as Array<{ shift_type: string; cnt: number }>;
+  `).all(start, end) as Array<{ shift_type: string; cnt: number }>;
 
   const shiftTypeDistribution: Record<string, number> = {};
   for (const row of distRows) {
@@ -55,10 +62,10 @@ export const GET = requireAuth(async (req: NextRequest) => {
       ROUND(AVG(CASE WHEN a.duration_minutes IS NOT NULL THEN a.duration_minutes ELSE NULL END)) AS avgDurationMinutes
     FROM attendance_records a
     JOIN users u ON u.id = a.user_id
-    WHERE a.date LIKE ? AND u.active = 1
+    WHERE a.date >= ? AND a.date < ? AND u.active = 1
     GROUP BY u.id, u.full_name
     ORDER BY totalClockIns DESC
-  `).all(`${prefix}%`) as Array<{
+  `).all(start, end) as Array<{
     user_id: number; full_name: string; totalClockIns: number; avgDurationMinutes: number | null;
   }>;
 
