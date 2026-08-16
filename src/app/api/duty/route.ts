@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { db, upsertDutyAssignment, getDutyAssignmentsForMonth } from '@/lib/db';
+import { db, upsertDutyAssignment } from '@/lib/db';
 import { normalizeText, parseIsoDate, parseJsonObject, parsePositiveInt, parseMonth, parseYear, toBoolean } from '@/lib/validation';
 import { sendPushToUser } from '@/lib/webpush';
 import type { DutyAssignment } from '@/types';
@@ -15,9 +15,15 @@ const VALID_DUTY_TYPES: DutyAssignment['duty_type'][] = ['regular', 'weekend', '
 // GET /api/duty — get duty assignments
 export const GET = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
-  const year = parseYear(searchParams.get('year'));
-  const month = parseMonth(searchParams.get('month'));
+  const yearParam = searchParams.get('year');
+  const monthParam = searchParams.get('month');
+  const year = parseYear(yearParam);
+  const month = parseMonth(monthParam);
   const userIdParam = searchParams.get('userId');
+
+  if ((yearParam !== null || monthParam !== null) && (!year || !month)) {
+    return NextResponse.json({ error: 'יש לציין שנה וחודש תקינים יחד' }, { status: 400 });
+  }
 
   let targetEmployeeId: number | null = null;
   if (userIdParam) {
@@ -32,18 +38,21 @@ export const GET = requireAuth(async (req, { user }) => {
     targetEmployeeId = user.id;
   }
 
-  let assignments: any[];
+  let assignments: DutyAssignment[];
   if (year && month) {
-    const prefix = `${year}-${String(month).padStart(2, '0')}`;
+    const start = `${year}-${String(month).padStart(2, '0')}-01`;
+    const nextYear = month === 12 ? year + 1 : year;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const end = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
     assignments = db
       .prepare(
         `SELECT d.id, d.date, d.employee_id, u.full_name AS employee_name, d.duty_type, d.notes
          FROM duty_assignments d
          JOIN users u ON u.id = d.employee_id
-         WHERE d.date LIKE ? ${targetEmployeeId ? 'AND d.employee_id = ?' : ''}
+         WHERE d.date >= ? AND d.date < ? ${targetEmployeeId ? 'AND d.employee_id = ?' : ''}
          ORDER BY d.date, u.full_name`
       )
-      .all(`${prefix}%`, ...(targetEmployeeId ? [targetEmployeeId] : [])) as any[];
+      .all(start, end, ...(targetEmployeeId ? [targetEmployeeId] : [])) as DutyAssignment[];
   } else {
     assignments = db
       .prepare(
@@ -53,7 +62,7 @@ export const GET = requireAuth(async (req, { user }) => {
          ${targetEmployeeId ? 'WHERE d.employee_id = ?' : ''}
          ORDER BY d.date, u.full_name`
       )
-      .all(...(targetEmployeeId ? [targetEmployeeId] : [])) as any[];
+      .all(...(targetEmployeeId ? [targetEmployeeId] : [])) as DutyAssignment[];
   }
 
   return NextResponse.json({ assignments });
