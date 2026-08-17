@@ -53,7 +53,7 @@ const ROLE_STYLES: Record<EmployeeRole, string> = {
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
 
-function Avatar({ name, url, size = 10 }: { name: string; url?: string; size?: number }) {
+function Avatar({ name, url }: { name: string; url?: string }) {
   const initials = name
     .split(' ')
     .slice(0, 2)
@@ -65,16 +65,16 @@ function Avatar({ name, url, size = 10 }: { name: string; url?: string; size?: n
       <Image
         src={url}
         alt={name}
-        width={size * 4}
-        height={size * 4}
+        width={40}
+        height={40}
         unoptimized
-        className={`w-${size} h-${size} rounded-full object-cover ring-2 ring-white/10`}
+        className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10"
       />
     );
   }
   return (
     <div
-      className={`w-${size} h-${size} rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10 shrink-0`}
+      className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10 shrink-0"
     >
       {initials}
     </div>
@@ -171,7 +171,7 @@ function EmployeeRow({
       className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors"
     >
       <div className="relative shrink-0">
-        <Avatar name={employee.name} url={employee.avatarUrl} size={10} />
+        <Avatar name={employee.name} url={employee.avatarUrl} />
         <span
           className={`absolute bottom-0 left-0 w-3 h-3 rounded-full border-2 border-zinc-950 ${statusStyle.dot}`}
         />
