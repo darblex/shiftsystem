@@ -156,8 +156,11 @@ export async function PATCH(req: NextRequest) {
   if (!currentPassword || !newPassword) {
     return NextResponse.json({ error: 'נא למלא סיסמה נוכחית וסיסמה חדשה' }, { status: 400 });
   }
-  if (newPassword.length < 6) {
-    return NextResponse.json({ error: 'הסיסמה החדשה חייבת להכיל לפחות 6 תווים' }, { status: 400 });
+  if (newPassword.length < 8) {
+    return NextResponse.json({ error: 'הסיסמה החדשה חייבת להכיל לפחות 8 תווים' }, { status: 400 });
+  }
+  if (newPassword === currentPassword) {
+    return NextResponse.json({ error: 'הסיסמה החדשה חייבת להיות שונה מהנוכחית' }, { status: 400 });
   }
 
   const userWithHash = getUserByUsername(user.username);
