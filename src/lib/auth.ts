@@ -12,6 +12,7 @@ import type { User } from '@/types';
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_JWT_SECRET = 'shiftsystem-dev-secret-change-in-production';
+const MIN_JWT_SECRET_LENGTH = 32;
 const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const COOKIE_NAME = 'ss_token';
@@ -21,7 +22,11 @@ export function isJwtSecretConfigured(): boolean {
     return true;
   }
 
-  return Boolean(process.env.JWT_SECRET && process.env.JWT_SECRET !== DEFAULT_JWT_SECRET);
+  return Boolean(
+    process.env.JWT_SECRET &&
+      process.env.JWT_SECRET !== DEFAULT_JWT_SECRET &&
+      process.env.JWT_SECRET.length >= MIN_JWT_SECRET_LENGTH
+  );
 }
 
 export function getAuthConfigurationErrorResponse(): NextResponse | null {
