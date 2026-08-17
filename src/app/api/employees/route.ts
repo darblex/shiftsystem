@@ -155,6 +155,15 @@ export const PATCH = requireAuth(async (req, { user }) => {
   const target = getUserById(Number(id));
   if (!target) return NextResponse.json({ error: 'עובד לא נמצא' }, { status: 404 });
 
+  if (isSelf && isAdmin) {
+    if (role !== null && role !== 'admin') {
+      return NextResponse.json({ error: 'לא ניתן להסיר מעצמך הרשאת מנהל' }, { status: 400 });
+    }
+    if (active !== undefined && !toBoolean(active)) {
+      return NextResponse.json({ error: 'לא ניתן להשבית את חשבון המנהל שלך' }, { status: 400 });
+    }
+  }
+
   const updates: Partial<Pick<User, 'email' | 'full_name' | 'role' | 'department' | 'phone' | 'active'>> = {};
 
   if (full_name != null) updates.full_name = String(full_name).trim();
