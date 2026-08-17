@@ -15,7 +15,6 @@ import {
 import { normalizeText, parseJsonObject, parsePositiveInt, parseIsoDate } from '@/lib/validation';
 import type { ShiftRequest, ShiftType } from '@/types';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const VALID_SHIFT_TYPES: ShiftType[] = [
   'morning',
   'afternoon',
@@ -34,27 +33,34 @@ export const GET = requireAuth(async (req, { user }) => {
   const { searchParams } = new URL(req.url);
   const userIdParam = searchParams.get('userId');
   const statusParam = searchParams.get('status');
-  const fromDate = searchParams.get('fromDate') ?? undefined;
-  const toDate = searchParams.get('toDate') ?? undefined;
-  const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 100;
+  const fromDateParam = searchParams.get('fromDate');
+  const toDateParam = searchParams.get('toDate');
+  const fromDate = fromDateParam ? parseIsoDate(fromDateParam) ?? undefined : undefined;
+  const toDate = toDateParam ? parseIsoDate(toDateParam) ?? undefined : undefined;
+  const limitParam = searchParams.get('limit');
+  const parsedLimit = limitParam ? parsePositiveInt(limitParam) : 100;
+  const limit = parsedLimit ? Math.min(parsedLimit, 500) : null;
 
-  if (!Number.isFinite(limit) || limit < 1) {
+  if (!limit) {
     return NextResponse.json({ error: 'limit לא תקין' }, { status: 400 });
   }
   if (statusParam && !VALID_STATUSES.includes(statusParam as ShiftRequest['status'])) {
     return NextResponse.json({ error: 'סטטוס לא תקין' }, { status: 400 });
   }
-  if (fromDate && !DATE_RE.test(fromDate)) {
+  if (fromDateParam && !fromDate) {
     return NextResponse.json({ error: 'fromDate לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
   }
-  if (toDate && !DATE_RE.test(toDate)) {
+  if (toDateParam && !toDate) {
     return NextResponse.json({ error: 'toDate לא תקין. נדרש YYYY-MM-DD' }, { status: 400 });
+  }
+  if (fromDate && toDate && fromDate > toDate) {
+    return NextResponse.json({ error: 'fromDate חייב להיות לפני toDate' }, { status: 400 });
   }
 
   let requesterId: number | undefined;
   if (userIdParam) {
-    requesterId = Number(userIdParam);
-    if (!Number.isInteger(requesterId) || requesterId < 1) {
+    requesterId = parsePositiveInt(userIdParam) ?? undefined;
+    if (!requesterId) {
       return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
     }
   }
@@ -81,7 +87,7 @@ export const GET = requireAuth(async (req, { user }) => {
       status: statusParam ?? null,
       fromDate: fromDate ?? null,
       toDate: toDate ?? null,
-      limit: Math.min(Math.max(limit, 1), 500),
+      limit,
     },
   });
 });
