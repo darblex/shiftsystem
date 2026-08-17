@@ -77,9 +77,9 @@ export const POST = requireAuth(
       return NextResponse.json({ error: 'כתובת אימייל לא תקינה' }, { status: 400 });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: 'הסיסמה חייבת להכיל לפחות 6 תווים' },
+        { error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
         { status: 400 }
       );
     }
@@ -194,9 +194,9 @@ export const PATCH = requireAuth(async (req, { user }) => {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: 'הסיסמה חייבת להכיל לפחות 6 תווים' },
+        { error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
         { status: 400 }
       );
     }
