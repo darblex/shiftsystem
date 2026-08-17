@@ -6,46 +6,35 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db, copyShiftsToMonth } from '@/lib/db';
+import { parseJsonObject, parseMonth, parsePositiveInt, parseYear } from '@/lib/validation';
 
 // POST /api/shifts/copy — body: {userId, fromYear, fromMonth, toYear, toMonth}
 export const POST = requireAuth(
   async (req) => {
-    let body: any;
+    let body: unknown;
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
     }
 
-    const { userId, fromYear, fromMonth, toYear, toMonth } = body ?? {};
+    const payload = parseJsonObject(body);
+    if (!payload) return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+    const targetUserId = parsePositiveInt(payload.userId);
+    const fromYear = parseYear(payload.fromYear);
+    const fromMonth = parseMonth(payload.fromMonth);
+    const toYear = parseYear(payload.toYear);
+    const toMonth = parseMonth(payload.toMonth);
 
-    if (!userId || !fromYear || !fromMonth || !toYear || !toMonth) {
+    if (!targetUserId || !fromYear || !fromMonth || !toYear || !toMonth) {
       return NextResponse.json(
         { error: 'נא לציין userId, fromYear, fromMonth, toYear, toMonth' },
         { status: 400 }
       );
     }
 
-    const targetUserId = Number(userId);
-    const fromYearNum = Number(fromYear);
-    const fromMonthNum = Number(fromMonth);
-    const toYearNum = Number(toYear);
-    const toMonthNum = Number(toMonth);
-
-    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
-      return NextResponse.json({ error: 'userId לא תקין' }, { status: 400 });
-    }
-    if (
-      !Number.isInteger(fromYearNum) ||
-      !Number.isInteger(toYearNum) ||
-      !Number.isInteger(fromMonthNum) ||
-      !Number.isInteger(toMonthNum) ||
-      fromMonthNum < 1 ||
-      fromMonthNum > 12 ||
-      toMonthNum < 1 ||
-      toMonthNum > 12
-    ) {
-      return NextResponse.json({ error: 'שנה או חודש לא תקינים' }, { status: 400 });
+    if (fromYear === toYear && fromMonth === toMonth) {
+      return NextResponse.json({ error: 'חודש המקור והיעד חייבים להיות שונים' }, { status: 400 });
     }
 
     const targetUser = db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').get(targetUserId);
@@ -53,10 +42,10 @@ export const POST = requireAuth(
 
     const count = copyShiftsToMonth(
       targetUserId,
-      fromYearNum,
-      fromMonthNum,
-      toYearNum,
-      toMonthNum
+      fromYear,
+      fromMonth,
+      toYear,
+      toMonth
     );
 
     return NextResponse.json({
