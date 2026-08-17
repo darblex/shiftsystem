@@ -1,9 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  poweredByHeader: false,
   serverExternalPackages: ['better-sqlite3', 'bcryptjs'],
   async headers() {
     return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'Pragma', value: 'no-cache' },
+        ],
+      },
       {
         source: '/:path*',
         headers: [
