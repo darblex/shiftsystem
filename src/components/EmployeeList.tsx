@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Shield, UserMinus, MoreVertical, ChevronDown, ChevronUp } from 'lucide-react';
@@ -93,13 +93,32 @@ function ActionsMenu({
   employee: Employee;
 }) {
   const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
 
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((o) => !o)}
         className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-zinc-400 hover:text-white"
         aria-label="פעולות"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
       >
         <MoreVertical className="w-4 h-4" />
       </button>
@@ -109,6 +128,10 @@ function ActionsMenu({
           <>
             <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
             <motion.div
+              ref={menuRef}
+              id={menuId}
+              role="menu"
+              aria-label={`פעולות עבור ${employee.name}`}
               initial={{ opacity: 0, scale: 0.95, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -117,6 +140,7 @@ function ActionsMenu({
             >
               {onViewProfile && (
                 <button
+                  role="menuitem"
                   className="w-full text-right px-3 py-2 text-sm text-zinc-200 hover:bg-white/10 transition-colors flex items-center gap-2"
                   onClick={() => { setOpen(false); onViewProfile(employee); }}
                 >
@@ -125,6 +149,7 @@ function ActionsMenu({
               )}
               {isAdmin && onPromote && employee.role === 'employee' && (
                 <button
+                  role="menuitem"
                   className="w-full text-right px-3 py-2 text-sm text-blue-300 hover:bg-white/10 transition-colors flex items-center gap-2"
                   onClick={() => { setOpen(false); onPromote(employee); }}
                 >
@@ -133,6 +158,7 @@ function ActionsMenu({
               )}
               {isAdmin && onDeactivate && employee.status === 'active' && (
                 <button
+                  role="menuitem"
                   className="w-full text-right px-3 py-2 text-sm text-rose-400 hover:bg-white/10 transition-colors flex items-center gap-2"
                   onClick={() => { setOpen(false); onDeactivate(employee); }}
                 >
