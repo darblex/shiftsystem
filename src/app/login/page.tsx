@@ -86,9 +86,15 @@ export default function LoginPage() {
               type="text"
               value={username}
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              enterKeyHint="next"
               onChange={(e) => setUsername(e.target.value)}
               placeholder="הזן שם משתמש"
               className="input-dark"
+              style={{ fontSize: '16px' }}
               dir="ltr"
             />
           </div>
@@ -102,10 +108,14 @@ export default function LoginPage() {
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="הזן סיסמה"
                 className="input-dark"
-                style={{ paddingLeft: '2.5rem' }}
+                style={{ paddingLeft: '2.5rem', fontSize: '16px' }}
                 dir="ltr"
               />
               <button
