@@ -38,6 +38,7 @@ RUN addgroup --system --gid 1001 nodejs \
 # Copy only what's needed to run
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copy entrypoint
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
