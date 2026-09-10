@@ -198,6 +198,9 @@ export default function ProfilePage() {
                     <input
                       className="form-input w-full"
                       type="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoComplete="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       required
@@ -207,6 +210,8 @@ export default function ProfilePage() {
                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--muted)' }}>טלפון</label>
                     <input
                       className="form-input w-full"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
                     />
@@ -237,6 +242,9 @@ export default function ProfilePage() {
                     <input
                       className="form-input w-full"
                       type="password"
+                      autoComplete="current-password"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       value={oldPwd}
                       onChange={e => setOldPwd(e.target.value)}
                       required
@@ -247,6 +255,9 @@ export default function ProfilePage() {
                     <input
                       className="form-input w-full"
                       type="password"
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       value={newPwd}
                       onChange={e => setNewPwd(e.target.value)}
                       required
@@ -258,6 +269,7 @@ export default function ProfilePage() {
                     <input
                       className="form-input w-full"
                       type="password"
+                      autoComplete="new-password"
                       value={confirmPwd}
                       onChange={e => setConfirmPwd(e.target.value)}
                       required
