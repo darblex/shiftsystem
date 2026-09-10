@@ -110,10 +110,16 @@ export default function ChangePasswordPage() {
               <input
                 type={showCurrent ? 'text' : 'password'}
                 value={currentPassword}
+                autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="text"
+                enterKeyHint="next"
                 onChange={e => setCurrentPassword(e.target.value)}
                 placeholder="הזן סיסמה זמנית"
                 className="input-dark"
-                style={{ paddingLeft: '2.5rem' }}
+                style={{ paddingLeft: '2.5rem', fontSize: '16px' }}
                 dir="ltr"
               />
               <button type="button" onClick={() => setShowCurrent(p => !p)} className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--muted)' }} tabIndex={-1}>
@@ -129,10 +135,15 @@ export default function ChangePasswordPage() {
               <input
                 type={showNew ? 'text' : 'password'}
                 value={newPassword}
+                autoComplete="new-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="next"
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="לפחות 8 תווים"
                 className="input-dark"
-                style={{ paddingLeft: '2.5rem' }}
+                style={{ paddingLeft: '2.5rem', fontSize: '16px' }}
                 dir="ltr"
               />
               <button type="button" onClick={() => setShowNew(p => !p)} className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--muted)' }} tabIndex={-1}>
@@ -157,9 +168,15 @@ export default function ChangePasswordPage() {
             <input
               type="password"
               value={confirmPassword}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="done"
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder="הזן שוב את הסיסמה החדשה"
               className="input-dark"
+              style={{ fontSize: '16px' }}
               dir="ltr"
             />
             {confirmPassword && newPassword && (
