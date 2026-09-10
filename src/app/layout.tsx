@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
 export const metadata: Metadata = {
+ manifest: '/manifest.webmanifest',
   title: 'מערכת ניהול משמרות הפניקס',
   description: 'מערכת ניהול משמרות ונוכחות לצוות הפניקס',
   applicationName: 'מערכת ניהול משמרות הפניקס',
