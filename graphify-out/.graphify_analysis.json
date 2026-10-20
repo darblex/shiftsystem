@@ -1,0 +1,985 @@
+{
+  "communities": {
+    "0": [
+      "src_app_api_attendance_route",
+      "src_app_api_attendance_route_dynamic",
+      "src_app_api_attendance_route_get",
+      "src_app_api_attendance_route_post",
+      "src_app_api_constraints_route",
+      "src_app_api_constraints_route_delete",
+      "src_app_api_constraints_route_dynamic",
+      "src_app_api_constraints_route_get",
+      "src_app_api_constraints_route_post",
+      "src_app_api_constraints_route_valid_preferences",
+      "src_app_api_duty_route",
+      "src_app_api_duty_route_delete",
+      "src_app_api_duty_route_dynamic",
+      "src_app_api_duty_route_get",
+      "src_app_api_duty_route_patch",
+      "src_app_api_duty_route_post",
+      "src_app_api_duty_route_valid_duty_types",
+      "src_app_api_holidays_route_delete",
+      "src_app_api_holidays_route_patch",
+      "src_app_api_holidays_route_post",
+      "src_app_api_profile_route",
+      "src_app_api_profile_route_patch",
+      "src_app_api_profile_route_post",
+      "src_app_api_reports_route",
+      "src_app_api_reports_route_get",
+      "src_app_api_schedule_route",
+      "src_app_api_schedule_route_delete",
+      "src_app_api_schedule_route_dynamic",
+      "src_app_api_schedule_route_get",
+      "src_app_api_schedule_route_patch",
+      "src_app_api_schedule_route_post",
+      "src_app_api_schedule_route_valid_shift_types",
+      "src_app_api_shifts_bulk_route",
+      "src_app_api_shifts_bulk_route_dynamic",
+      "src_app_api_shifts_bulk_route_post",
+      "src_app_api_shifts_bulk_route_valid_shift_types",
+      "src_app_api_shifts_copy_route",
+      "src_app_api_shifts_copy_route_dynamic",
+      "src_app_api_shifts_copy_route_post",
+      "src_app_api_shifts_route",
+      "src_app_api_shifts_route_delete",
+      "src_app_api_shifts_route_dynamic",
+      "src_app_api_shifts_route_get",
+      "src_app_api_shifts_route_post",
+      "src_app_api_shifts_route_valid_shift_types",
+      "src_lib_auth_requireauth",
+      "src_lib_db_clockin",
+      "src_lib_db_clockout",
+      "src_lib_db_copyshiftstomonth",
+      "src_lib_db_db",
+      "src_lib_db_deleteshift",
+      "src_lib_db_getallattendanceformonth",
+      "src_lib_db_getallshiftsformonth",
+      "src_lib_db_getattendanceforuser",
+      "src_lib_db_getshiftsformonth",
+      "src_lib_db_gettodayattendance",
+      "src_lib_db_monthdaterange",
+      "src_lib_db_upsertconstraints",
+      "src_lib_db_upsertshift",
+      "src_lib_validation",
+      "src_lib_validation_isisodate",
+      "src_lib_validation_isplainobject",
+      "src_lib_validation_isrealdate",
+      "src_lib_validation_normalizetext",
+      "src_lib_validation_parseisodate",
+      "src_lib_validation_parsejsonobject",
+      "src_lib_validation_parsemonth",
+      "src_lib_validation_parsepositiveint",
+      "src_lib_validation_parseyear",
+      "src_lib_validation_toboolean"
+    ],
+    "1": [
+      "src_app_api_holidays_route",
+      "src_app_api_holidays_route_dynamic",
+      "src_app_api_holidays_route_get",
+      "src_app_api_holidays_route_valid_types",
+      "src_app_api_seed_route",
+      "src_app_api_seed_route_april_2026_holidays",
+      "src_app_api_seed_route_datesinmonth",
+      "src_app_api_seed_route_dynamic",
+      "src_app_api_seed_route_get",
+      "src_app_api_seed_route_getdayofweek",
+      "src_app_api_seed_route_post",
+      "src_app_api_seed_route_shift_types",
+      "src_app_api_summary_route",
+      "src_app_api_summary_route_dynamic",
+      "src_app_api_summary_route_get",
+      "src_app_api_summary_route_getdaysinmonth",
+      "src_app_api_summary_route_shift_label",
+      "src_lib_db_bulkupsertshifts",
+      "src_lib_db_getallactiveusers",
+      "src_lib_db_getconstraints",
+      "src_lib_db_getdutyassignmentsformonth",
+      "src_lib_db_getholidaysfromdb",
+      "src_lib_db_upsertdutyassignment",
+      "src_lib_holidays",
+      "src_lib_holidays_getholiday",
+      "src_lib_holidays_getholidaysformonth",
+      "src_lib_holidays_holidayset",
+      "src_lib_holidays_isholiday",
+      "src_lib_holidays_israeli_holidays",
+      "src_lib_schedule",
+      "src_lib_schedule_datesinmonth",
+      "src_lib_schedule_generatemonthschedule",
+      "src_lib_schedule_getmonthsummary",
+      "src_lib_schedule_getshiftdaystats",
+      "src_lib_schedule_getupcomingduty",
+      "src_lib_schedule_isweekend",
+      "src_lib_schedule_monthdaterange",
+      "src_lib_schedule_shift_rotation",
+      "src_lib_schedule_shiftdaystat",
+      "src_lib_schedule_shiftsummary",
+      "src_lib_schedule_toiso",
+      "src_types_index",
+      "src_types_index_constraintpreference",
+      "src_types_index_constraintrecord",
+      "src_types_index_generatemonthoptions",
+      "src_types_index_holiday",
+      "src_types_index_jwtpayload",
+      "src_types_index_monthschedule",
+      "src_types_index_role",
+      "src_types_index_shiftentry"
+    ],
+    "2": [
+      "src_app_api_auth_route",
+      "src_app_api_auth_route_delete",
+      "src_app_api_auth_route_dynamic",
+      "src_app_api_auth_route_get",
+      "src_app_api_auth_route_patch",
+      "src_app_api_auth_route_post",
+      "src_app_api_employees_route",
+      "src_app_api_employees_route_delete",
+      "src_app_api_employees_route_dynamic",
+      "src_app_api_employees_route_get",
+      "src_app_api_employees_route_patch",
+      "src_app_api_employees_route_post",
+      "src_app_api_health_route",
+      "src_app_api_health_route_dynamic",
+      "src_app_api_health_route_get",
+      "src_app_api_profile_route_get",
+      "src_lib_auth",
+      "src_lib_auth_buildauthcookievalue",
+      "src_lib_auth_buildclearcookievalue",
+      "src_lib_auth_decodetoken",
+      "src_lib_auth_extracttokenfromrequest",
+      "src_lib_auth_getauthconfigurationerrorresponse",
+      "src_lib_auth_getcurrentuser",
+      "src_lib_auth_getcurrentuserfromrequest",
+      "src_lib_auth_gettokenfromcookies",
+      "src_lib_auth_hashpassword",
+      "src_lib_auth_hashpasswordsync",
+      "src_lib_auth_isjwtsecretconfigured",
+      "src_lib_auth_jwtpayload",
+      "src_lib_auth_loginwithcredentials",
+      "src_lib_auth_routehandler",
+      "src_lib_auth_signtoken",
+      "src_lib_auth_verifypassword",
+      "src_lib_auth_verifytoken",
+      "src_lib_db_createuser",
+      "src_lib_db_getuserbyid",
+      "src_lib_db_getuserbyusername",
+      "src_lib_db_updateuser",
+      "src_lib_ratelimit",
+      "src_lib_ratelimit_bucket",
+      "src_lib_ratelimit_buckets",
+      "src_lib_ratelimit_checkloginratelimit",
+      "src_lib_ratelimit_checkusernameratelimit",
+      "src_lib_ratelimit_getip",
+      "src_lib_ratelimit_resetloginratelimit",
+      "src_lib_ratelimit_takebucket",
+      "src_types_index_user",
+      "src_types_index_userwithhash"
+    ],
+    "3": [
+      "src_app_api_push_subscribe_route",
+      "src_app_api_push_subscribe_route_delete",
+      "src_app_api_push_subscribe_route_dynamic",
+      "src_app_api_push_subscribe_route_post",
+      "src_app_api_push_subscribe_route_validendpoint",
+      "src_app_api_push_subscribe_route_validpushkey",
+      "src_app_api_push_vapid_public_key_route",
+      "src_app_api_push_vapid_public_key_route_dynamic",
+      "src_app_api_push_vapid_public_key_route_get",
+      "src_app_api_requests_id_route",
+      "src_app_api_requests_id_route_dynamic",
+      "src_app_api_requests_id_route_mutable_statuses",
+      "src_app_api_requests_id_route_mutablestatus",
+      "src_app_api_requests_id_route_patch",
+      "src_app_api_requests_id_route_put",
+      "src_app_api_requests_route",
+      "src_app_api_requests_route_dynamic",
+      "src_app_api_requests_route_get",
+      "src_app_api_requests_route_post",
+      "src_app_api_requests_route_valid_shift_types",
+      "src_app_api_requests_route_valid_statuses",
+      "src_lib_db",
+      "src_lib_db_createshiftrequest",
+      "src_lib_db_db_path",
+      "src_lib_db_findpendingshiftrequest",
+      "src_lib_db_getdb",
+      "src_lib_db_getpushsubscriptionsforuser",
+      "src_lib_db_getsetting",
+      "src_lib_db_getshiftforuserondate",
+      "src_lib_db_getshiftrequestbyid",
+      "src_lib_db_initdb",
+      "src_lib_db_initdb_seedholidays",
+      "src_lib_db_initdb_seedusers",
+      "src_lib_db_listshiftrequests",
+      "src_lib_db_pushsubscriptionrow",
+      "src_lib_db_removepushsubscription",
+      "src_lib_db_resolveshiftrequest",
+      "src_lib_db_savepushsubscription",
+      "src_lib_db_setsetting",
+      "src_lib_webpush",
+      "src_lib_webpush_ensurevapidkeys",
+      "src_lib_webpush_getvapidpublickey",
+      "src_lib_webpush_getwebpush",
+      "src_lib_webpush_sendpushtouser",
+      "src_types_index_shiftrequest"
+    ],
+    "4": [
+      "src_app_admin_page",
+      "src_app_admin_page_adminpage",
+      "src_app_admin_page_adminpage_deactivateemployee",
+      "src_app_admin_page_adminpage_handlecreateemployee",
+      "src_app_admin_page_adminpage_handlegenerateschedule",
+      "src_app_admin_page_adminpage_handlelogout",
+      "src_app_admin_page_user",
+      "src_components_employeelist",
+      "src_components_employeelist_actionsmenu",
+      "src_components_employeelist_avatar",
+      "src_components_employeelist_employee",
+      "src_components_employeelist_employeelist",
+      "src_components_employeelist_employeelist_setdirection",
+      "src_components_employeelist_employeelist_togglesort",
+      "src_components_employeelist_employeelistprops",
+      "src_components_employeelist_employeerole",
+      "src_components_employeelist_employeerow",
+      "src_components_employeelist_employeestatus",
+      "src_components_employeelist_role_labels",
+      "src_components_employeelist_role_styles",
+      "src_components_employeelist_status_styles",
+      "src_components_schedulecalendar",
+      "src_components_schedulecalendar_daystatus",
+      "src_components_schedulecalendar_hebrew_days",
+      "src_components_schedulecalendar_hebrew_months",
+      "src_components_schedulecalendar_legend",
+      "src_components_schedulecalendar_schedulecalendar",
+      "src_components_schedulecalendar_schedulecalendar_navigate",
+      "src_components_schedulecalendar_schedulecalendarprops",
+      "src_components_schedulecalendar_scheduleday",
+      "src_components_schedulecalendar_status_styles",
+      "src_components_statscards",
+      "src_components_statscards_card",
+      "src_components_statscards_cols_class",
+      "src_components_statscards_default_gradients",
+      "src_components_statscards_statcard",
+      "src_components_statscards_statscards",
+      "src_components_statscards_statscardsprops",
+      "src_components_statscards_stattrend",
+      "src_components_statscards_trend_styles"
+    ],
+    "5": [
+      "autoprefixer",
+      "eslint",
+      "eslint_config_next",
+      "package",
+      "package_devdependencies",
+      "package_devdependencies_autoprefixer",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_postcss",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_types_bcryptjs",
+      "package_devdependencies_types_better_sqlite3",
+      "package_devdependencies_types_file_saver",
+      "package_devdependencies_types_jsonwebtoken",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_types_web_push",
+      "package_devdependencies_typescript",
+      "package_json_tailwindcss",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_start",
+      "package_version",
+      "postcss",
+      "types_bcryptjs",
+      "types_better_sqlite3",
+      "types_file_saver",
+      "types_jsonwebtoken",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "types_web_push",
+      "typescript"
+    ],
+    "6": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_esnext",
+      "ref_next_dev_types_ts",
+      "ref_next_env_d_ts",
+      "ref_next_types_ts",
+      "ref_node_modules",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_downleveliteration",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "7": [
+      "src_app_schedule_page",
+      "src_app_schedule_page_currentuser",
+      "src_app_schedule_page_schedulepage",
+      "src_app_schedule_page_schedulepage_changeview",
+      "src_app_schedule_page_schedulepage_handlelogout",
+      "src_app_schedule_page_view_buttons",
+      "src_app_schedule_page_viewmode",
+      "src_components_monthlysummary",
+      "src_components_monthlysummary_absence_shifts",
+      "src_components_monthlysummary_deptentry",
+      "src_components_monthlysummary_employeesummary",
+      "src_components_monthlysummary_monthlysummary",
+      "src_components_monthlysummary_monthlysummary_gonext",
+      "src_components_monthlysummary_monthlysummary_goprev",
+      "src_components_monthlysummary_monthlysummary_handleemailsummary",
+      "src_components_monthlysummary_nextmonth",
+      "src_components_monthlysummary_prevmonth",
+      "src_components_monthlysummary_summarydata",
+      "src_components_monthlysummary_work_shifts",
+      "src_components_myconstraints",
+      "src_components_myconstraints_constraintrecord",
+      "src_components_myconstraints_month_names",
+      "src_components_myconstraints_myconstraints",
+      "src_components_myconstraints_myconstraints_handledelete",
+      "src_components_myconstraints_myconstraints_handlesave",
+      "src_components_myconstraints_myconstraints_nextmonth",
+      "src_components_myconstraints_myconstraints_prevmonth",
+      "src_components_myconstraints_pref",
+      "src_components_myconstraints_pref_options"
+    ],
+    "8": [
+      "src_components_shiftboard",
+      "src_components_shiftboard_employee",
+      "src_components_shiftboard_employeerow",
+      "src_components_shiftboard_getdayofweek",
+      "src_components_shiftboard_getdaysinmonth",
+      "src_components_shiftboard_hebrew_weekdays",
+      "src_components_shiftboard_holidayentry",
+      "src_components_shiftboard_monthlabel",
+      "src_components_shiftboard_nextmonth",
+      "src_components_shiftboard_paddate",
+      "src_components_shiftboard_prevmonth",
+      "src_components_shiftboard_shiftboard",
+      "src_components_shiftboard_shiftboard_gonext",
+      "src_components_shiftboard_shiftboard_goprev",
+      "src_components_shiftboard_shiftboard_handlecopymonth",
+      "src_components_shiftboard_shiftboard_handledropswap",
+      "src_components_shiftboard_shiftboard_handlesaveshift",
+      "src_components_shiftboard_shiftboardprops",
+      "src_components_shiftboard_shiftcell"
+    ],
+    "9": [
+      "src_app_profile_page",
+      "src_app_profile_page_currentuser",
+      "src_app_profile_page_shift_labels",
+      "src_app_profile_page_shiftentry",
+      "src_components_mobilenav",
+      "src_components_mobilenav_admin_items",
+      "src_components_mobilenav_employee_items",
+      "src_components_mobilenav_mobilenav",
+      "src_components_mobilenav_mobilenavprops",
+      "src_components_mobilenav_navitem",
+      "src_components_sidebar",
+      "src_components_sidebar_avatar",
+      "src_components_sidebar_default_items",
+      "src_components_sidebar_navlink",
+      "src_components_sidebar_sidebar",
+      "src_components_sidebar_sidebaritem",
+      "src_components_sidebar_sidebarprops",
+      "src_components_sidebar_sidebaruser"
+    ],
+    "10": [
+      "src_app_attendance_page",
+      "src_app_attendance_page_attendancepage",
+      "src_app_attendance_page_attendancepage_handlelogout",
+      "src_app_attendance_page_attendancepage_nextmonth",
+      "src_app_attendance_page_attendancepage_prevmonth",
+      "src_app_attendance_page_clockcard",
+      "src_app_attendance_page_clockcard_handleclick",
+      "src_app_attendance_page_currentuser",
+      "src_app_attendance_page_formatdatehe",
+      "src_app_attendance_page_formatduration",
+      "src_app_attendance_page_formattime",
+      "src_app_attendance_page_recordrow",
+      "src_app_attendance_page_statusdot",
+      "src_app_attendance_page_todaydate",
+      "src_app_attendance_page_totalhoursformonth",
+      "src_types_index_attendancerecord"
+    ],
+    "11": [
+      "src_components_dutyroster",
+      "src_components_dutyroster_adddutymodal",
+      "src_components_dutyroster_adddutymodal_handlesave",
+      "src_components_dutyroster_adddutymodalprops",
+      "src_components_dutyroster_dutyassignment",
+      "src_components_dutyroster_dutyroster",
+      "src_components_dutyroster_dutyroster_gonext",
+      "src_components_dutyroster_dutyroster_goprev",
+      "src_components_dutyroster_dutyroster_handleaddduty",
+      "src_components_dutyroster_dutyrosterprops",
+      "src_components_dutyroster_employee",
+      "src_components_dutyroster_getdayofweek",
+      "src_components_dutyroster_getdaysinmonth",
+      "src_components_dutyroster_he_weekdays_short",
+      "src_components_dutyroster_monthlabel",
+      "src_components_dutyroster_paddate"
+    ],
+    "12": [
+      "src_components_shiftboard_shiftentry",
+      "src_components_shifteditmodal",
+      "src_components_shifteditmodal_shift_options",
+      "src_components_shifteditmodal_shifteditmodalprops",
+      "src_components_shifteditmodal_shiftoption",
+      "src_components_shiftmeta",
+      "src_components_shiftmeta_getrolelabel",
+      "src_components_shiftmeta_isworkshift",
+      "src_components_shiftmeta_shift_class",
+      "src_components_shiftmeta_shift_edit_order",
+      "src_components_shiftmeta_shift_label",
+      "src_components_shiftmeta_shift_time_range",
+      "src_components_shiftmeta_visible_week_shift_types",
+      "src_components_shiftmeta_work_shift_types",
+      "src_components_weekview_shiftentry",
+      "src_types_index_shifttype"
+    ],
+    "13": [
+      "src_components_shiftmeta_shift_abbrev",
+      "src_components_swaprequests",
+      "src_components_swaprequests_dayoffform",
+      "src_components_swaprequests_dayoffform_handlesubmit",
+      "src_components_swaprequests_formatdate",
+      "src_components_swaprequests_newrequestform",
+      "src_components_swaprequests_newrequestform_handlesubmit",
+      "src_components_swaprequests_requestrow",
+      "src_components_swaprequests_requestrow_act",
+      "src_components_swaprequests_shift_types",
+      "src_components_swaprequests_status_color",
+      "src_components_swaprequests_status_label",
+      "src_components_swaprequests_swaprequests",
+      "src_components_swaprequests_swaprequests_handleaction",
+      "src_components_swaprequests_swaprequestsprops"
+    ],
+    "14": [
+      "src_app_dashboard_page",
+      "src_app_dashboard_page_currentuser",
+      "src_app_dashboard_page_dashboardpage",
+      "src_app_dashboard_page_dashboardpage_handlelogout",
+      "src_app_dashboard_page_employee",
+      "src_app_dashboard_page_formatisodate",
+      "src_app_dashboard_page_homeactioncard",
+      "src_app_dashboard_page_nextmonthparts",
+      "src_app_dashboard_page_normalizedutyresponse",
+      "src_app_dashboard_page_normalizescheduleresponse",
+      "src_app_dashboard_page_parsedutydate",
+      "src_app_dashboard_page_statcard",
+      "src_app_dashboard_page_todayshiftgroup",
+      "src_types_index_dutyassignment"
+    ],
+    "15": [
+      "src_app_reports_page",
+      "src_app_reports_page_attendancesummary",
+      "src_app_reports_page_currentuser",
+      "src_app_reports_page_reportsdata",
+      "src_app_reports_page_reportspage",
+      "src_app_reports_page_reportspage_handlelogout",
+      "src_app_reports_page_reportspage_nextmonthfn",
+      "src_app_reports_page_reportspage_prevmonth",
+      "src_app_reports_page_shift_colors",
+      "src_app_reports_page_shift_labels",
+      "src_app_reports_page_shiftsperemployee",
+      "src_app_reports_page_statcard"
+    ],
+    "16": [
+      "src_components_shiftboard_shiftboard_handleexportexcel",
+      "src_components_shiftboard_shiftboard_handleexportpdf",
+      "src_lib_exportschedule",
+      "src_lib_exportschedule_employee",
+      "src_lib_exportschedule_exporttoexcel",
+      "src_lib_exportschedule_exporttopdf",
+      "src_lib_exportschedule_getdaysinmonth",
+      "src_lib_exportschedule_monthlabel",
+      "src_lib_exportschedule_paddate",
+      "src_lib_exportschedule_shift_abbrev",
+      "src_lib_exportschedule_shift_label",
+      "src_lib_exportschedule_shiftentry"
+    ],
+    "17": [
+      "railway",
+      "railway_build",
+      "railway_build_builder",
+      "railway_build_dockerfilepath",
+      "railway_deploy",
+      "railway_deploy_healthcheckpath",
+      "railway_deploy_healthchecktimeout",
+      "railway_deploy_restartpolicymaxretries",
+      "railway_deploy_restartpolicytype",
+      "railway_schema"
+    ],
+    "18": [
+      "src_app_duty_page",
+      "src_app_duty_page_currentuser",
+      "src_app_duty_page_dutypage",
+      "src_app_duty_page_dutypage_handlelogout",
+      "src_components_pushnotificationtoggle",
+      "src_components_pushnotificationtoggle_pushnotificationtoggle",
+      "src_components_pushnotificationtoggle_pushnotificationtoggle_subscribe",
+      "src_components_pushnotificationtoggle_pushnotificationtoggle_unsubscribe",
+      "src_components_pushnotificationtoggle_state",
+      "src_components_pushnotificationtoggle_urlbase64touint8array"
+    ],
+    "19": [
+      "src_components_weekview",
+      "src_components_weekview_employee",
+      "src_components_weekview_getweekdates",
+      "src_components_weekview_getweekofyear",
+      "src_components_weekview_he_days",
+      "src_components_weekview_toiso",
+      "src_components_weekview_weekview",
+      "src_components_weekview_weekview_nextweekfn",
+      "src_components_weekview_weekview_prevweek",
+      "src_components_weekview_weekviewprops"
+    ],
+    "20": [
+      "src_components_constraintform",
+      "src_components_constraintform_constraintbadge",
+      "src_components_constraintform_constraintentry",
+      "src_components_constraintform_constraintform",
+      "src_components_constraintform_constraintform_handlesubmit",
+      "src_components_constraintform_constraintformprops",
+      "src_components_constraintform_pref_styles",
+      "src_components_constraintform_preference_options",
+      "src_components_constraintform_shiftpreference"
+    ],
+    "21": [
+      "src_components_dutycalendar",
+      "src_components_dutycalendar_dutycalendar",
+      "src_components_dutycalendar_dutycalendar_navigate",
+      "src_components_dutycalendar_dutycalendarprops",
+      "src_components_dutycalendar_dutyday",
+      "src_components_dutycalendar_hebrew_days_short",
+      "src_components_dutycalendar_hebrew_months",
+      "src_components_dutycalendar_isweekend"
+    ],
+    "22": [
+      "better_sqlite3",
+      "framer_motion",
+      "lucide_react",
+      "package_dependencies",
+      "package_dependencies_better_sqlite3",
+      "package_dependencies_framer_motion",
+      "package_dependencies_lucide_react"
+    ],
+    "23": [
+      "src_components_themetoggle",
+      "src_components_themetoggle_themetoggle",
+      "src_components_themetoggle_themetoggleprops",
+      "src_lib_usetheme",
+      "src_lib_usetheme_getinitialtheme",
+      "src_lib_usetheme_theme",
+      "src_lib_usetheme_usetheme"
+    ],
+    "24": [
+      "src_app_profile_page_profilepage",
+      "src_app_profile_page_profilepage_handlechangepassword",
+      "src_app_profile_page_profilepage_handlelogout",
+      "src_app_profile_page_profilepage_handlesaveprofile",
+      "src_app_profile_page_profilepage_showtoast"
+    ],
+    "25": [
+      "src_components_copymonthmodal",
+      "src_components_copymonthmodal_copymonthmodal",
+      "src_components_copymonthmodal_copymonthmodal_handleconfirm",
+      "src_components_copymonthmodal_copymonthmodalprops",
+      "src_components_copymonthmodal_monthname"
+    ],
+    "26": [
+      "src_app_layout",
+      "src_app_layout_metadata",
+      "src_app_layout_rootlayout",
+      "src_app_layout_viewport"
+    ],
+    "27": [
+      "src_app_change_password_page",
+      "src_app_change_password_page_changepasswordpage",
+      "src_app_change_password_page_changepasswordpage_handlesubmit"
+    ],
+    "28": [
+      "src_app_login_page",
+      "src_app_login_page_loginpage",
+      "src_app_login_page_loginpage_handlesubmit"
+    ],
+    "29": [
+      "src_components_shifteditmodal_formatdate",
+      "src_components_shifteditmodal_shifteditmodal",
+      "src_components_shifteditmodal_shifteditmodal_handlesave"
+    ],
+    "30": [
+      "bcryptjs",
+      "package_dependencies_bcryptjs"
+    ],
+    "31": [
+      "class_variance_authority",
+      "package_dependencies_class_variance_authority"
+    ],
+    "32": [
+      "clsx",
+      "package_dependencies_clsx"
+    ],
+    "33": [
+      "date_fns",
+      "package_dependencies_date_fns"
+    ],
+    "34": [
+      "date_fns_tz",
+      "package_dependencies_date_fns_tz"
+    ],
+    "35": [
+      "entrypoint",
+      "entrypoint_sh__entry"
+    ],
+    "36": [
+      "file_saver",
+      "package_dependencies_file_saver"
+    ],
+    "37": [
+      "geist",
+      "package_dependencies_geist"
+    ],
+    "38": [
+      "jsonwebtoken",
+      "package_dependencies_jsonwebtoken"
+    ],
+    "39": [
+      "next_config",
+      "next_config_nextconfig"
+    ],
+    "40": [
+      "next_env_d",
+      "next_env_d_rationale_6"
+    ],
+    "41": [
+      "package_dependencies_jspdf",
+      "package_json_jspdf"
+    ],
+    "42": [
+      "package_dependencies_jspdf_autotable",
+      "package_json_jspdf_autotable"
+    ],
+    "43": [
+      "package_dependencies_next",
+      "package_json_next"
+    ],
+    "44": [
+      "package_dependencies_radix_ui_react_avatar",
+      "radix_ui_react_avatar"
+    ],
+    "45": [
+      "package_dependencies_radix_ui_react_dialog",
+      "radix_ui_react_dialog"
+    ],
+    "46": [
+      "package_dependencies_radix_ui_react_dropdown_menu",
+      "radix_ui_react_dropdown_menu"
+    ],
+    "47": [
+      "package_dependencies_radix_ui_react_label",
+      "radix_ui_react_label"
+    ],
+    "48": [
+      "package_dependencies_radix_ui_react_select",
+      "radix_ui_react_select"
+    ],
+    "49": [
+      "package_dependencies_radix_ui_react_separator",
+      "radix_ui_react_separator"
+    ],
+    "50": [
+      "package_dependencies_radix_ui_react_tabs",
+      "radix_ui_react_tabs"
+    ],
+    "51": [
+      "package_dependencies_radix_ui_react_toast",
+      "radix_ui_react_toast"
+    ],
+    "52": [
+      "package_dependencies_react",
+      "react"
+    ],
+    "53": [
+      "package_dependencies_react_dom",
+      "react_dom"
+    ],
+    "54": [
+      "package_dependencies_tailwind_merge",
+      "tailwind_merge"
+    ],
+    "55": [
+      "package_dependencies_web_push",
+      "web_push"
+    ],
+    "56": [
+      "package_dependencies_xlsx",
+      "xlsx"
+    ],
+    "57": [
+      "src_app_page",
+      "src_app_page_homepage"
+    ],
+    "58": [
+      "eslint_config"
+    ],
+    "59": [
+      "jspdf_autotable_jspdf_autotable"
+    ],
+    "60": [
+      "jspdf_jspdf"
+    ],
+    "61": [
+      "next_next"
+    ],
+    "62": [
+      "postcss_config"
+    ],
+    "63": [
+      "public_sw"
+    ],
+    "64": [
+      "tailwind_config"
+    ],
+    "65": [
+      "tailwindcss_tailwindcss"
+    ]
+  },
+  "cohesion": {
+    "0": 0.09109730848861283,
+    "1": 0.07020408163265306,
+    "2": 0.09840425531914894,
+    "3": 0.08686868686868687,
+    "4": 0.05512820512820513,
+    "5": 0.05263157894736842,
+    "6": 0.06896551724137931,
+    "7": 0.07881773399014778,
+    "8": 0.15789473684210525,
+    "9": 0.12418300653594772,
+    "10": 0.18333333333333332,
+    "11": 0.15833333333333333,
+    "12": 0.18333333333333332,
+    "13": 0.14285714285714285,
+    "14": 0.1978021978021978,
+    "15": 0.16666666666666666,
+    "16": 0.25757575757575757,
+    "17": 0.2,
+    "18": 0.24444444444444444,
+    "19": 0.26666666666666666,
+    "20": 0.2222222222222222,
+    "21": 0.2857142857142857,
+    "22": 0.2857142857142857,
+    "23": 0.42857142857142855,
+    "24": 0.6,
+    "25": 0.5,
+    "26": 0.5,
+    "27": 0.6666666666666666,
+    "28": 0.6666666666666666,
+    "29": 0.6666666666666666,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0,
+    "60": 1.0,
+    "61": 1.0,
+    "62": 1.0,
+    "63": 1.0,
+    "64": 1.0,
+    "65": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_lib_validation_parsepositiveint",
+      "label": "parsePositiveInt()",
+      "degree": 36
+    },
+    {
+      "id": "src_lib_validation_parsejsonobject",
+      "label": "parseJsonObject()",
+      "degree": 35
+    },
+    {
+      "id": "src_lib_validation_normalizetext",
+      "label": "normalizeText()",
+      "degree": 27
+    },
+    {
+      "id": "src_lib_validation_parsemonth",
+      "label": "parseMonth()",
+      "degree": 23
+    },
+    {
+      "id": "src_lib_validation_parseyear",
+      "label": "parseYear()",
+      "degree": 23
+    },
+    {
+      "id": "src_lib_auth_requireauth",
+      "label": "requireAuth()",
+      "degree": 21
+    },
+    {
+      "id": "src_lib_validation_parseisodate",
+      "label": "parseIsoDate()",
+      "degree": 20
+    },
+    {
+      "id": "src_lib_db_getuserbyid",
+      "label": "getUserById()",
+      "degree": 19
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 17
+    },
+    {
+      "id": "src_types_index_shifttype",
+      "label": "ShiftType",
+      "degree": 15
+    }
+  ],
+  "surprises": [
+    {
+      "source": "getMonthSummary()",
+      "target": "getAllShiftsForMonth()",
+      "source_files": [
+        "src/lib/schedule.ts",
+        "src/lib/db.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities; peripheral node `getMonthSummary()` unexpectedly reaches hub `getAllShiftsForMonth()`"
+    },
+    {
+      "source": "ShiftEntry",
+      "target": "ShiftType",
+      "source_files": [
+        "src/components/ShiftBoard.tsx",
+        "src/types/index.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `ShiftEntry` unexpectedly reaches hub `ShiftType`"
+    },
+    {
+      "source": "ShiftEditModalProps",
+      "target": "ShiftType",
+      "source_files": [
+        "src/components/ShiftEditModal.tsx",
+        "src/types/index.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `ShiftEditModalProps` unexpectedly reaches hub `ShiftType`"
+    },
+    {
+      "source": "ShiftOption",
+      "target": "ShiftType",
+      "source_files": [
+        "src/components/ShiftEditModal.tsx",
+        "src/types/index.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `ShiftOption` unexpectedly reaches hub `ShiftType`"
+    },
+    {
+      "source": "ShiftEntry",
+      "target": "ShiftType",
+      "source_files": [
+        "src/components/WeekView.tsx",
+        "src/types/index.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `ShiftEntry` unexpectedly reaches hub `ShiftType`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `Sidebar()` connect `Sidebar.tsx` to `EmployeeList.tsx`, `schedule/page.tsx`, `attendance/page.tsx`, `dashboard/page.tsx`, `reports/page.tsx`, `duty/page.tsx`?",
+      "why": "High betweenness centrality (0.076) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `dependencies` to `devDependencies`, `bcryptjs`, `class-variance-authority`, `clsx`, `date-fns`, `date-fns-tz`, `file-saver`, `geist`, `jsonwebtoken`, `jspdf`, `jspdf-autotable`, `next`, `@radix-ui/react-avatar`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-label`, `@radix-ui/react-select`, `@radix-ui/react-separator`, `@radix-ui/react-tabs`, `@radix-ui/react-toast`, `react`, `react-dom`, `tailwind-merge`, `web-push`, `xlsx`?",
+      "why": "High betweenness centrality (0.017) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `ShiftType` connect `shiftMeta.ts` to `parsePositiveInt`, `index.ts`, `db.ts`, `ShiftBoard.tsx`, `SwapRequests.tsx`, `WeekView.tsx`?",
+      "why": "High betweenness centrality (0.017) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `ShiftDayStat`, `ShiftSummary`, `JwtPayload` to the rest of the system?",
+      "why": "216 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `parsePositiveInt` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09109730848861283 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `index.ts` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.07020408163265306 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `auth.ts` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09840425531914894 - nodes in this community are weakly interconnected."
+    }
+  ]
+}
